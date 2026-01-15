@@ -1,0 +1,398 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Digital Keys to Soil Taxonomy</title>
+    <script>
+        // FOUC prevention: apply dark theme before first paint
+        (function() {
+            var t = localStorage.getItem('dst-theme');
+            var d = t === 'dark' || (!t && window.matchMedia('(prefers-color-scheme: dark)').matches);
+            if (d) document.documentElement.classList.add('dark');
+        })();
+    </script>
+    <link rel="stylesheet" href="style.css">
+</head>
+<body>
+    <div class="container" x-data="app()" x-init="init()">
+        <aside class="sidebar">
+            <div class="sidebar-controls">
+                <button class="reset-btn" @click="reset()">Reset All</button>
+                <button class="theme-toggle" @click="cycleTheme()">
+                    <span x-text="themeIcon"></span> <span x-text="themeLabel"></span>
+                </button>
+            </div>
+
+            <!-- Current classification result -->
+            <template x-if="getClassificationPath().length > 0">
+                <div class="current-classification">
+                    <div class="result-label">Classification</div>
+                    <div class="result-name" x-text="getCurrentClassification()"></div>
+                    <div class="result-level" x-text="getClassificationLevel()"></div>
+                </div>
+            </template>
+
+            <!-- Taxonomy hierarchy path -->
+            <div class="classification-path">
+                <div class="info-header">Taxonomy Path</div>
+                <template x-if="getClassificationPath().length === 0">
+                    <p class="hint-text">Select criteria to begin classification</p>
+                </template>
+                <template x-for="step in getClassificationPath()" :key="step.code">
+                    <div class="classification-step" :class="step.satisfied ? 'satisfied' : 'pending'">
+                        <div class="step-level" x-text="step.levelName"></div>
+                        <span class="step-name" x-text="step.name"></span>
+                        <span class="step-code" x-text="step.code"></span>
+                    </div>
+                </template>
+            </div>
+
+            <!-- Selected criteria detail -->
+            <div class="selected-criteria-section">
+                <div class="info-header">Selected Criteria</div>
+                <template x-if="getCheckedCriteriaForSidebar().length === 0">
+                    <p class="hint-text">No criteria checked yet</p>
+                </template>
+                <template x-for="criterion in getCheckedCriteriaForSidebar()" :key="getCriterionId(criterion)">
+                    <div class="selected-criterion" @click="removeFromPath(getCriterionId(criterion))">
+                        <strong x-text="criterion.clause_id"></strong>
+                        <span class="remove-icon">×</span>
+                    </div>
+                </template>
+            </div>
+        </aside>
+
+        <div class="main">
+            <header>
+                <h1>Digital Keys to Soil Taxonomy</h1>
+                <div class="tab-bar">
+                    <button class="tab-btn" :class="{ active: currentTab === 'classify' }" @click="currentTab = 'classify'">Classify</button>
+                    <button class="tab-btn" :class="{ active: currentTab === 'about' }" @click="currentTab = 'about'">About</button>
+                </div>
+                <p x-show="currentTab === 'classify' && !findCurrentLevel()">Check criteria to classify your soil</p>
+                <div class="breadcrumb" x-show="currentTab === 'classify' && findCurrentLevel()" x-text="getClassificationBreadcrumb()"></div>
+            </header>
+
+            <!-- About Tab -->
+            <div class="about-panel" x-show="currentTab === 'about'">
+                <div class="about-section">
+                    <h2>About This Application</h2>
+                    <p>Digital Keys to Soil Taxonomy is an interactive, offline-first Progressive Web App for USDA soil classification following the <a href="https://www.nrcs.usda.gov/resources/guides-and-instructions/keys-to-soil-taxonomy" target="_blank" rel="noopener">Keys to Soil Taxonomy (13th Edition, 2022)</a>.</p>
+                    <p>The application guides you through the official USDA dichotomous key by progressively revealing classification criteria. Check the criteria that match your soil properties, and the app determines the taxonomic classification: Order → Suborder → Great Group → Subgroup.</p>
+                    <p>No internet connection is required after the first visit. The entire application — code, data, and glossary — is cached locally by the Service Worker.</p>
+                </div>
+
+                <div class="about-section">
+                    <h2>Data Summary</h2>
+                    <p>All taxonomy data is generated from official USDA source files through a Python preprocessing pipeline.</p>
+                    <div class="about-stats" x-show="engine">
+                        <div class="stat-card">
+                            <div class="stat-value" x-text="engine ? engine.allCriteria.length : '—'"></div>
+                            <div class="stat-label">Navigation Criteria</div>
+                        </div>
+                        <div class="stat-card">
+                            <div class="stat-value" x-text="engine ? Object.keys(engine.outcomes).length : '—'"></div>
+                            <div class="stat-label">Classification Outcomes</div>
+                        </div>
+                        <div class="stat-card">
+                            <div class="stat-value" x-text="engine ? Object.keys(engine.glossary).length : '—'"></div>
+                            <div class="stat-label">Glossary Terms</div>
+                        </div>
+                        <div class="stat-card">
+                            <div class="stat-value" x-text="engine ? Object.keys(engine.codeNames).length : '—'"></div>
+                            <div class="stat-label">Taxonomic Names</div>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="about-section">
+                    <h2>JSON Data Schema <span class="version-badge">v3.2.0</span></h2>
+                    <p>The application is powered by <code>data/keys_optimized.json</code>, a ~3.5 MB file generated from USDA source data. The file contains five top-level sections:</p>
+                    <table class="about-table">
+                        <thead><tr><th>Section</th><th>Description</th></tr></thead>
+                        <tbody>
+                            <tr><td><code>navigation.criteria</code></td><td>Array of decision criteria with clause hierarchy, AND/OR logic, and pre-linkified glossary terms</td></tr>
+                            <tr><td><code>outcomes</code></td><td>Object keyed by taxonomic code — each is a classification result (depth -1)</td></tr>
+                            <tr><td><code>glossary</code></td><td>Object keyed by term ID — soil science terms with definitions</td></tr>
+                            <tr><td><code>order_names</code></td><td>Single-letter code → Order name (e.g., A → Gelisols)</td></tr>
+                            <tr><td><code>code_names</code></td><td>Full code → taxon name at all levels (e.g., AA → Histels)</td></tr>
+                        </tbody>
+                    </table>
+                    <h3>Criterion Fields</h3>
+                    <table class="about-table">
+                        <thead><tr><th>Field</th><th>Type</th><th>Description</th></tr></thead>
+                        <tbody>
+                            <tr><td><code>crit</code></td><td>string</td><td>Hierarchical code (A–L Orders, AA–LL Suborders, AAA+ deeper)</td></tr>
+                            <tr><td><code>clause</code></td><td>number</td><td>Numeric clause ID within the group</td></tr>
+                            <tr><td><code>parent_clause</code></td><td>number|""</td><td>Parent clause reference (empty for roots)</td></tr>
+                            <tr><td><code>logic</code></td><td>string</td><td><code>OR</code> or <code>AND</code> — how this node's children relate</td></tr>
+                            <tr><td><code>depth</code></td><td>number</td><td>0=Order, 1=Suborder, 2=Great Group, 3=Subgroup</td></tr>
+                            <tr><td><code>content</code></td><td>string</td><td>Plain text criterion description</td></tr>
+                            <tr><td><code>content_html</code></td><td>string</td><td>Content with glossary terms pre-linkified</td></tr>
+                        </tbody>
+                    </table>
+                </div>
+
+                <div class="about-section">
+                    <h2>DSTCore Engine</h2>
+                    <p><code>scripts/dst-core.js</code> is a standalone, framework-agnostic logic engine with no DOM dependencies. It works identically in the browser (<code>window.DSTCore</code>) and Node.js (<code>require()</code>).</p>
+                    <h3>Satisfaction Algorithm</h3>
+                    <p>Each parent criterion's <code>logic</code> field determines how its children are evaluated:</p>
+                    <ul>
+                        <li><strong>AND</strong> — ALL children must be satisfied</li>
+                        <li><strong>OR</strong> — at least ONE child must be satisfied</li>
+                        <li><strong>Leaf nodes</strong> (no children) — satisfied when checked by the user</li>
+                    </ul>
+                    <p>Evaluation is recursive with per-mutation cache invalidation.</p>
+                    <h3>Key API Methods</h3>
+                    <table class="about-table">
+                        <thead><tr><th>Method</th><th>Returns</th><th>Description</th></tr></thead>
+                        <tbody>
+                            <tr><td><code>DSTCore.create(data)</code></td><td>engine</td><td>Create engine instance from parsed JSON</td></tr>
+                            <tr><td><code>engine.check(id)</code></td><td>—</td><td>Check a criterion (auto-invalidates caches)</td></tr>
+                            <tr><td><code>engine.toggle(id)</code></td><td>—</td><td>Toggle check state</td></tr>
+                            <tr><td><code>engine.reset()</code></td><td>—</td><td>Clear all checks</td></tr>
+                            <tr><td><code>engine.isClauseSatisfied(c)</code></td><td>boolean</td><td>Recursive satisfaction check (cached)</td></tr>
+                            <tr><td><code>engine.isGroupSatisfied(code)</code></td><td>boolean</td><td>Is an entire taxonomic group satisfied?</td></tr>
+                            <tr><td><code>engine.getVisibleGroups()</code></td><td>array</td><td>Groups to display at current level</td></tr>
+                            <tr><td><code>engine.getClassificationPath()</code></td><td>array</td><td>Current taxonomy path (Order → Subgroup)</td></tr>
+                            <tr><td><code>engine.getCurrentClassification()</code></td><td>string</td><td>Name of deepest satisfied taxon</td></tr>
+                            <tr><td><code>engine.onChange(fn)</code></td><td>unsubscribe</td><td>Register state change listener</td></tr>
+                        </tbody>
+                    </table>
+                </div>
+
+                <div class="about-section">
+                    <h2>Technology</h2>
+                    <table class="about-table">
+                        <thead><tr><th>Component</th><th>Technology</th><th>Notes</th></tr></thead>
+                        <tbody>
+                            <tr><td>UI Framework</td><td>Alpine.js v3.13.3</td><td>Loaded via CDN — no build step</td></tr>
+                            <tr><td>Logic Engine</td><td>Vanilla JavaScript (IIFE)</td><td><code>scripts/dst-core.js</code> — browser + Node.js</td></tr>
+                            <tr><td>Styling</td><td>CSS Custom Properties</td><td>Light/dark themes, soil-teal palette</td></tr>
+                            <tr><td>Offline</td><td>Service Worker</td><td>Cache-first static, network-first data</td></tr>
+                            <tr><td>Data Pipeline</td><td>Python 3</td><td>6-step preprocessing from USDA source JSON</td></tr>
+                            <tr><td>Testing</td><td>Custom harness</td><td>54 tests — Node.js + browser</td></tr>
+                        </tbody>
+                    </table>
+                </div>
+
+                <div class="about-section">
+                    <h2>Source &amp; License</h2>
+                    <ul>
+                        <li><strong>Code</strong>: MIT License</li>
+                        <li><strong>Taxonomy Data</strong>: Derived from USDA <em>Keys to Soil Taxonomy</em> — public domain</li>
+                        <li><strong>USDA Source</strong>: <a href="https://www.nrcs.usda.gov/resources/guides-and-instructions/keys-to-soil-taxonomy" target="_blank" rel="noopener">nrcs.usda.gov</a></li>
+                        <li><strong>Source Data</strong>: <a href="https://github.com/ncss-tech/SoilKnowledgeBase" target="_blank" rel="noopener">SoilKnowledgeBase (GitHub)</a></li>
+                    </ul>
+                </div>
+            </div>
+
+            <!-- Classify Tab -->
+            <div class="content-with-panel" x-show="currentTab === 'classify'">
+                <div class="content" x-show="!loading" @click="handleTermClick($event)" @mouseover="handleTermHover($event)">
+                    <template x-if="error">
+                        <div class="error" x-text="error"></div>
+                    </template>
+
+                    <template x-for="group in visibleGroups" :key="group.code">
+                        <div class="criteria-group" :class="{ complete: isGroupSatisfied(group.code) }">
+                            <h3>
+                                <span x-text="group.code"></span>: <span x-text="group.label"></span>
+                                <template x-if="isGroupSatisfied(group.code)">
+                                    <span class="satisfied-badge"> &#10003; satisfied</span>
+                                </template>
+                            </h3>
+                            <template x-for="criterion in group.items" :key="getCriterionId(criterion)">
+                                <div class="criterion"
+                                     :class="{
+                                         'criterion-header': !isLeafCriterion(criterion) && criterion.depth === 0,
+                                         'criterion-parent': !isLeafCriterion(criterion) && criterion.depth > 0,
+                                         'criterion-satisfied': isClauseSatisfied(criterion)
+                                     }"
+                                     :style="{ marginLeft: criterion.depth * 20 + 'px' }">
+                                    <!-- Leaf criterion: user-checkable -->
+                                    <template x-if="isLeafCriterion(criterion)">
+                                        <input type="checkbox" :id="getCriterionId(criterion)" @change="checkCriterion(getCriterionId(criterion))" :checked="checkedCriteria[getCriterionId(criterion)]">
+                                    </template>
+                                    <!-- Structural header (depth 0): auto-computed status -->
+                                    <template x-if="!isLeafCriterion(criterion) && criterion.depth === 0">
+                                        <span class="auto-status" :class="isClauseSatisfied(criterion) ? 'status-satisfied' : 'status-unsatisfied'" x-text="isClauseSatisfied(criterion) ? '✓' : '○'"></span>
+                                    </template>
+                                    <!-- Inline parent (depth > 0): checkbox-like status -->
+                                    <template x-if="!isLeafCriterion(criterion) && criterion.depth > 0">
+                                        <span class="inline-status" :class="isClauseSatisfied(criterion) ? 'status-satisfied' : 'status-unsatisfied'" x-text="isClauseSatisfied(criterion) ? '✓' : '○'"></span>
+                                    </template>
+                                    <label :for="isLeafCriterion(criterion) ? getCriterionId(criterion) : null">
+                                        <span x-html="criterion.content_html || criterion.content"></span>
+                                        <span class="logic-badge" :class="criterion.logic === 'OR' ? 'logic-or' : 'logic-and'" x-text="criterion.logic || 'AND'" x-show="isLeafCriterion(criterion) && (engine.clauseChildrenMap[engine.getCriterionId({crit: criterion.crit, clause: criterion.parent_clause})] || []).length > 1"></span>
+                                    </label>
+                                </div>
+                            </template>
+                        </div>
+                    </template>
+                </div>
+
+                <div class="loading" x-show="loading"><p>Loading criteria...</p></div>
+
+                <div class="info-panel" :class="{ hidden: !currentTerm }">
+                    <template x-if="currentTerm">
+                        <div>
+                            <div class="info-header">Term Definition</div>
+                            <div class="current-term">
+                                <h3 x-text="currentTerm.term"></h3>
+                                <p x-text="currentTerm.definition"></p>
+                            </div>
+                            <div class="info-header">Recently Viewed</div>
+                            <div class="viewed-history">
+                                <template x-for="item in viewedHistory" :key="item.id">
+                                    <div class="history-item" @click="selectViewed(item)"><strong x-text="item.term"></strong></div>
+                                </template>
+                            </div>
+                        </div>
+                    </template>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <script src="scripts/dst-core.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/alpinejs@3.13.3/dist/cdn.min.js" defer></script>
+    <script>
+        /*
+         * ============================================
+         * DIGITAL KEYS TO SOIL TAXONOMY — ALPINE.JS UI
+         * ============================================
+         * Thin Alpine shell delegating all pure logic to DSTCore engine.
+         * See scripts/dst-core.js for the standalone library.
+         */
+        function app() {
+            return {
+                // --- State ---
+                engine: null,
+                loading: true,
+                error: null,
+                checkedCriteria: {},
+                visibleGroups: [],
+                currentTerm: null,
+                viewedHistory: [],
+                currentTab: 'classify',
+                theme: localStorage.getItem('dst-theme') || 'auto',
+
+                // --- Theme ---
+
+                get themeIcon() {
+                    return { auto: '◐', light: '☀', dark: '☾' }[this.theme] || '◐';
+                },
+                get themeLabel() {
+                    return { auto: 'Auto', light: 'Light', dark: 'Dark' }[this.theme] || 'Auto';
+                },
+                cycleTheme() {
+                    var order = ['auto', 'light', 'dark'];
+                    this.theme = order[(order.indexOf(this.theme) + 1) % 3];
+                    if (this.theme === 'auto') localStorage.removeItem('dst-theme');
+                    else localStorage.setItem('dst-theme', this.theme);
+                    this.applyTheme();
+                },
+                applyTheme() {
+                    var dark = this.theme === 'dark' ||
+                        (this.theme === 'auto' && window.matchMedia('(prefers-color-scheme: dark)').matches);
+                    document.documentElement.classList.toggle('dark', dark);
+                },
+
+                // --- Engine Delegation ---
+
+                getCriterionId(c) { return this.engine.getCriterionId(c); },
+                isLeafCriterion(c) { return this.engine.isLeafCriterion(c); },
+                isClauseSatisfied(c) { return this.engine.isClauseSatisfied(c); },
+                isGroupSatisfied(code) { return this.engine.isGroupSatisfied(code); },
+                findCurrentLevel() { return this.engine ? this.engine.findCurrentLevel() : null; },
+                getClassificationPath() { return this.engine ? this.engine.getClassificationPath() : []; },
+                getCurrentClassification() { return this.engine ? this.engine.getCurrentClassification() : ''; },
+                getClassificationLevel() { return this.engine ? this.engine.getClassificationLevel() : ''; },
+                getClassificationBreadcrumb() { return this.engine ? this.engine.getClassificationBreadcrumb() : ''; },
+                removeCodePrefix(content, code) { return this.engine.removeCodePrefix(content, code); },
+                getCheckedCriteriaForSidebar() { return this.engine ? this.engine.getCheckedLeaves() : []; },
+
+                // --- Data Initialization ---
+
+                async init() {
+                    try {
+                        this.applyTheme();
+                        var self = this;
+                        window.matchMedia('(prefers-color-scheme: dark)').addEventListener('change', function() {
+                            if (self.theme === 'auto') self.applyTheme();
+                        });
+
+                        var response = await fetch('data/keys_optimized.json');
+                        if (!response.ok) throw new Error('HTTP ' + response.status);
+                        var data = await response.json();
+
+                        this.engine = DSTCore.create(data);
+                        this.visibleGroups = this.engine.getVisibleGroups();
+                        this.loading = false;
+                    } catch (err) {
+                        this.error = 'Failed to load: ' + err.message;
+                        this.loading = false;
+                    }
+                },
+
+                // --- User Interactions ---
+
+                checkCriterion(id) {
+                    this.engine.toggle(id);
+                    this._syncState();
+                },
+                removeFromPath(id) {
+                    this.engine.uncheck(id);
+                    this._syncState();
+                },
+                reset() {
+                    this.engine.reset();
+                    this.currentTerm = null;
+                    this.viewedHistory = [];
+                    this._syncState();
+                },
+                _syncState() {
+                    this.checkedCriteria = Object.assign({}, this.engine.checkedCriteria);
+                    this.visibleGroups = this.engine.getVisibleGroups();
+                },
+
+                // --- Glossary ---
+
+                handleTermClick(event) {
+                    var span = event.target.closest('.glossary-term');
+                    if (span) {
+                        var termId = span.getAttribute('data-id');
+                        this.selectTerm(termId);
+                    }
+                },
+                handleTermHover(event) {
+                    var span = event.target.closest('.glossary-term');
+                    if (span) {
+                        var termId = span.getAttribute('data-id');
+                        var term = this.engine.glossary[termId];
+                        if (term && !span.title) {
+                            span.title = term.term + '\n\n' + term.definition;
+                        }
+                    }
+                },
+                selectTerm(termId) {
+                    var term = this.engine.glossary[termId];
+                    if (term) {
+                        this.currentTerm = term;
+                        if (!this.viewedHistory.find(function(h) { return h.id === termId; })) {
+                            this.viewedHistory.unshift(term);
+                            if (this.viewedHistory.length > 10) this.viewedHistory.pop();
+                        }
+                    }
+                },
+                selectViewed(item) {
+                    this.currentTerm = item;
+                }
+            };
+        }
+    </script>
+</body>
+</html>

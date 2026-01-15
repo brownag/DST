@@ -1,0 +1,8 @@
+scratch/
+*.pyc
+__pycache__/
+
+# Asset files (USDA source data - obtain separately)
+assets/*.json
+# Don't ignore the README
+!assets/README.md

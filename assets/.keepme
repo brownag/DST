@@ -1,0 +1,3 @@
+# This file ensures the assets/ directory is tracked by git even when empty.
+# Asset files (2022_KST_codes.json, etc.) are not committed.
+# See assets/README.md for information on obtaining required USDA source files.

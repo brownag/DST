@@ -1,0 +1,39 @@
+cff-version: 1.2.0
+title: Digital Keys to Soil Taxonomy
+abstract: >
+  An interactive, offline-first web application for USDA soil classification
+  following the Keys to Soil Taxonomy (2022 Edition).
+type: software
+authors:
+  - name: Digital Keys Contributors
+license: MIT
+date-released: 2026-02-16
+version: 3.2.0
+keywords:
+  - soil-taxonomy
+  - soil-classification
+  - decision-tree
+  - offline-first
+  - PWA
+message: >
+  If you use this software in academic work, please cite it as described below.
+  The taxonomy data is derived from the USDA public domain Keys to Soil Taxonomy.
+
+references:
+  - type: standard
+    authors:
+      - name: United States Department of Agriculture
+      - name: Natural Resources Conservation Service
+    title: Keys to Soil Taxonomy
+    edition: 12
+    year: 2022
+    url: https://www.nrcs.usda.gov/resources/guides-and-instructions/keys-to-soil-taxonomy
+
+preferred-citation:
+  type: software
+  authors:
+    - name: Digital Keys Contributors
+  title: Digital Keys to Soil Taxonomy
+  version: 3.2.0
+  date-released: 2026-02-16
+  license: MIT
