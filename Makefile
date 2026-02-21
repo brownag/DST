@@ -82,7 +82,7 @@ clean:
 	@echo "Cleaning up temporary files..."
 	@rm -f **/*.tmp
 	@rm -f **/.DS_Store
-	@rm -f data/keys_optimized.json.bak
+	@rm -f data/dst-data.json.bak
 	@echo "Cleanup complete"
 
 # Show documentation
@@ -108,7 +108,7 @@ status:
 	@node scripts/validate-logic-consistency.js 2>&1 | head -1
 	@echo ""
 	@echo "Files:"
-	@echo "  - data/keys_optimized.json ($(shell wc -c < data/keys_optimized.json | numfmt --to=iec-i --suffix=B 2>/dev/null || echo 'large'))"
+	@echo "  - data/dst-data.json ($(shell wc -c < data/dst-data.json | numfmt --to=iec-i --suffix=B 2>/dev/null || echo 'large'))"
 	@echo "  - scripts/tests.js ($(shell wc -l < scripts/tests.js) lines)"
 	@echo ""
 

@@ -23,7 +23,7 @@
 const fs = require('fs');
 const path = require('path');
 
-const dataPath = './data/keys_optimized.json';
+const dataPath = './data/dst-data.json';
 
 if (!fs.existsSync(dataPath)) {
   console.error(`Error: ${dataPath} not found`);

@@ -3,7 +3,7 @@
  * No DOM, no Alpine.js, no UI. Works in browser or Node.js.
  *
  * Usage:
- *   const engine = DSTCore.create(data);  // data = parsed keys_optimized.json
+ *   const engine = DSTCore.create(data);  // data = parsed dst-data.json
  *   engine.check('AAA_5');                // check a criterion
  *   engine.uncheck('AAA_5');
  *   engine.getVisibleGroups();            // get current visible groups

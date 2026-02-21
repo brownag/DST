@@ -26,7 +26,7 @@ const STATIC_PATHS = [
 ];
 
 const DYNAMIC_PATHS = [
-    'data/keys_optimized.json',
+    'data/dst-data.json',
 ];
 
 const STATIC_URLS = STATIC_PATHS.map(function(p) { return new URL(p, BASE).href; });

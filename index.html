@@ -87,32 +87,15 @@
                     <p>No internet connection is required after the first visit. The entire application — code, data, and glossary — is cached locally by the Service Worker.</p>
                 </div>
 
+
                 <div class="about-section">
                     <h2>Data Summary</h2>
-                    <p>All taxonomy data is generated from official USDA source files through a Python preprocessing pipeline.</p>
-                    <div class="about-stats" x-show="engine">
-                        <div class="stat-card">
-                            <div class="stat-value" x-text="engine ? engine.allCriteria.length : '—'"></div>
-                            <div class="stat-label">Navigation Criteria</div>
-                        </div>
-                        <div class="stat-card">
-                            <div class="stat-value" x-text="engine ? Object.keys(engine.outcomes).length : '—'"></div>
-                            <div class="stat-label">Classification Outcomes</div>
-                        </div>
-                        <div class="stat-card">
-                            <div class="stat-value" x-text="engine ? Object.keys(engine.glossary).length : '—'"></div>
-                            <div class="stat-label">Glossary Terms</div>
-                        </div>
-                        <div class="stat-card">
-                            <div class="stat-value" x-text="engine ? Object.keys(engine.codeNames).length : '—'"></div>
-                            <div class="stat-label">Taxonomic Names</div>
-                        </div>
-                    </div>
+                    <p x-show="engine">This dataset contains <strong x-text="engine ? engine.allCriteria.length : '—'"></strong> decision criteria across <strong x-text="engine ? Object.keys(engine.outcomes).length : '—'"></strong> soil taxonomy classifications. The glossary includes <strong x-text="engine ? Object.keys(engine.glossary).length : '—'"></strong> soil science terms, mapped across <strong x-text="engine ? Object.keys(engine.codeNames).length : '—'"></strong> taxonomic soil names (Orders, Suborders, Great Groups, and Subgroups).</p>
                 </div>
 
                 <div class="about-section">
-                    <h2>JSON Data Schema <span class="version-badge">v3.2.0</span></h2>
-                    <p>The application is powered by <code>data/keys_optimized.json</code>, a ~3.5 MB file generated from USDA source data. The file contains five top-level sections:</p>
+                    <h2>JSON Data Schema <span class="version-badge">v1.0.0</span></h2>
+                    <p>The application is powered by <code>data/dst-data.json</code>, a ~3.5 MB file generated from USDA source data. The file contains five top-level sections:</p>
                     <table class="about-table">
                         <thead><tr><th>Section</th><th>Description</th></tr></thead>
                         <tbody>
@@ -168,18 +151,19 @@
                 </div>
 
                 <div class="about-section">
-                    <h2>Technology</h2>
-                    <table class="about-table">
-                        <thead><tr><th>Component</th><th>Technology</th><th>Notes</th></tr></thead>
-                        <tbody>
-                            <tr><td>UI Framework</td><td>Alpine.js v3.13.3</td><td>Loaded via CDN — no build step</td></tr>
-                            <tr><td>Logic Engine</td><td>Vanilla JavaScript (IIFE)</td><td><code>scripts/dst-core.js</code> — browser + Node.js</td></tr>
-                            <tr><td>Styling</td><td>CSS Custom Properties</td><td>Light/dark themes, soil-teal palette</td></tr>
-                            <tr><td>Offline</td><td>Service Worker</td><td>Cache-first static, network-first data</td></tr>
-                            <tr><td>Data Pipeline</td><td>Python 3</td><td>6-step preprocessing from USDA source JSON</td></tr>
-                            <tr><td>Testing</td><td>Custom harness</td><td>54 tests — Node.js + browser</td></tr>
-                        </tbody>
-                    </table>
+                    <h2>Technology Stack</h2>
+                    <p><strong>Frontend:</strong> Alpine.js v3.13.3 (loaded via CDN), CSS with custom properties for light/dark theming</p>
+                    <p><strong>Engine:</strong> Standalone JavaScript logic engine (<code>scripts/dst-core.js</code>) with no dependencies. Works identically in browser and Node.js.</p>
+                    <p><strong>Data:</strong> Python preprocessing pipeline generates optimized JSON from USDA source files. Service Worker enables offline-first caching.</p>
+                    <p><strong>Testing:</strong> Custom test harness with Node.js and browser execution modes.</p>
+                </div>
+
+                <div class="about-section">
+                    <h2>Resources</h2>
+                    <ul>
+                        <li><a href="https://github.com/ncss-tech/SoilKnowledgeBase" target="_blank" rel="noopener">Soil Knowledge Base</a> — Official NCSS taxonomy data repository</li>
+                        <li><a href="https://www.nrcs.usda.gov/resources/guides-and-instructions/keys-to-soil-taxonomy" target="_blank" rel="noopener">USDA Keys to Soil Taxonomy</a> — Official classification guide</li>
+                    </ul>
                 </div>
 
                 <div class="about-section">
@@ -331,7 +315,7 @@
                             if (self.theme === 'auto') self.applyTheme();
                         });
 
-                        var response = await fetch('data/keys_optimized.json');
+                        var response = await fetch('data/dst-data.json');
                         if (!response.ok) throw new Error('HTTP ' + response.status);
                         var data = await response.json();
 

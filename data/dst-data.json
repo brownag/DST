@@ -1,10 +1,10 @@
 {
-  "version": "3.2.0",
+  "version": "1.0.0",
   "generated": "2026-02-16",
   "source": "USDA Keys to Soil Taxonomy (2022)",
   "description": "Optimized hierarchical criteria with separated navigation and outcomes",
   "metadata": {
-    "schema_version": "3.2.0",
+    "schema_version": "1.0.0",
     "depth_labels": {
       "0": "Key to Soil Orders",
       "1": "Key to Suborders",

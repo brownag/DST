@@ -42,7 +42,7 @@
   "files": [
     "scripts/dst-core.js",
     "scripts/dst-core.d.ts",
-    "data/keys_optimized.json",
+    "data/dst-data.json",
     "README.md",
     "LICENSE"
   ],

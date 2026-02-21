@@ -865,7 +865,7 @@ describe('Classification Helpers', () => {
 
 describe('Real Data: Aquods (CA) OR Logic Fix', () => {
 
-  it('Should load keys_optimized.json successfully', () => {
+  it('Should load dst-data.json successfully', () => {
     let fs;
     try {
       fs = require('fs');
@@ -876,7 +876,7 @@ describe('Real Data: Aquods (CA) OR Logic Fix', () => {
 
     if (!fs) return;
 
-    const data = JSON.parse(fs.readFileSync('./data/keys_optimized.json', 'utf8'));
+    const data = JSON.parse(fs.readFileSync('./data/dst-data.json', 'utf8'));
     assertDefined(data.navigation, 'Should have navigation section');
     assertDefined(data.navigation.criteria, 'Should have criteria array');
     assertTrue(data.navigation.criteria.length > 0, 'Should have at least one criterion');
@@ -892,7 +892,7 @@ describe('Real Data: Aquods (CA) OR Logic Fix', () => {
 
     if (!fs) return;
 
-    const data = JSON.parse(fs.readFileSync('./data/keys_optimized.json', 'utf8'));
+    const data = JSON.parse(fs.readFileSync('./data/dst-data.json', 'utf8'));
     const ca = data.navigation.criteria.find(c => c.crit === 'CA' && c.clause === 1);
     assertDefined(ca, 'CA criterion should exist');
     assertEqual(ca.logic, 'OR', 'CA (Aquods) root should have OR logic, not AND');
@@ -908,7 +908,7 @@ describe('Real Data: Aquods (CA) OR Logic Fix', () => {
 
     if (!fs) return;
 
-    const data = JSON.parse(fs.readFileSync('./data/keys_optimized.json', 'utf8'));
+    const data = JSON.parse(fs.readFileSync('./data/dst-data.json', 'utf8'));
     const caChildren = data.navigation.criteria.filter(c => c.crit === 'CA' && c.parent_clause === 1);
     assertEqual(caChildren.length, 2, 'CA should have exactly 2 children (CA.1 and CA.2)');
 
@@ -926,7 +926,7 @@ describe('Real Data: Aquods (CA) OR Logic Fix', () => {
 
     if (!fs) return;
 
-    const data = JSON.parse(fs.readFileSync('./data/keys_optimized.json', 'utf8'));
+    const data = JSON.parse(fs.readFileSync('./data/dst-data.json', 'utf8'));
     const ca1 = data.navigation.criteria.find(c => c.crit === 'CA' && c.clause === 2);
     const ca2 = data.navigation.criteria.find(c => c.crit === 'CA' && c.clause === 3);
 
@@ -946,7 +946,7 @@ describe('Real Data: Aquods (CA) OR Logic Fix', () => {
 
     if (!fs) return;
 
-    const data = JSON.parse(fs.readFileSync('./data/keys_optimized.json', 'utf8'));
+    const data = JSON.parse(fs.readFileSync('./data/dst-data.json', 'utf8'));
     const ca = data.navigation.criteria.find(c => c.crit === 'CA' && c.clause === 1);
     assertDefined(ca, 'CA should exist');
     assertTrue(
@@ -968,7 +968,7 @@ describe('Real Data Integration Tests', () => {
 
     if (!fs) return;
 
-    const data = JSON.parse(fs.readFileSync('./data/keys_optimized.json', 'utf8'));
+    const data = JSON.parse(fs.readFileSync('./data/dst-data.json', 'utf8'));
     const engine = DSTCore.create(data);
     assertDefined(engine, 'Engine should be created');
     assertTrue(engine.allCriteria.length > 0, 'Engine should have criteria');
@@ -985,7 +985,7 @@ describe('Real Data Integration Tests', () => {
 
     if (!fs) return;
 
-    const data = JSON.parse(fs.readFileSync('./data/keys_optimized.json', 'utf8'));
+    const data = JSON.parse(fs.readFileSync('./data/dst-data.json', 'utf8'));
     const engine = DSTCore.create(data);
 
     const ca = engine.getCriterionByCode('CA');
@@ -1016,7 +1016,7 @@ describe('Real Data Integration Tests', () => {
 
     if (!fs) return;
 
-    const data = JSON.parse(fs.readFileSync('./data/keys_optimized.json', 'utf8'));
+    const data = JSON.parse(fs.readFileSync('./data/dst-data.json', 'utf8'));
     const engine = DSTCore.create(data);
 
     const ca = engine.getCriterionByCode('CA');
@@ -1044,7 +1044,7 @@ describe('Real Data Integration Tests', () => {
 
     if (!fs) return;
 
-    const data = JSON.parse(fs.readFileSync('./data/keys_optimized.json', 'utf8'));
+    const data = JSON.parse(fs.readFileSync('./data/dst-data.json', 'utf8'));
     const engine = DSTCore.create(data);
 
     const ca = engine.getCriterionByCode('CA');
@@ -1083,7 +1083,7 @@ describe('Real Data Integration Tests', () => {
 
     if (!fs) return;
 
-    const data = JSON.parse(fs.readFileSync('./data/keys_optimized.json', 'utf8'));
+    const data = JSON.parse(fs.readFileSync('./data/dst-data.json', 'utf8'));
     const engine = DSTCore.create(data);
 
     // C is Spodosols (Order)
@@ -1119,7 +1119,7 @@ describe('Data Structure: Aridisols Mixed Logic (Semantic)', () => {
 
     if (!fs) return;
 
-    const data = JSON.parse(fs.readFileSync('./data/keys_optimized.json', 'utf8'));
+    const data = JSON.parse(fs.readFileSync('./data/dst-data.json', 'utf8'));
     const children = data.navigation.criteria.filter(c =>
       c.crit === 'G' && c.parent_clause === 2
     );
@@ -1152,7 +1152,7 @@ describe('Data Structure: Aridisols Mixed Logic (Semantic)', () => {
 
     if (!fs) return;
 
-    const data = JSON.parse(fs.readFileSync('./data/keys_optimized.json', 'utf8'));
+    const data = JSON.parse(fs.readFileSync('./data/dst-data.json', 'utf8'));
 
     // Verify semantic structure in content
     const criteria = data.navigation.criteria.filter(c => c.crit === 'G' && c.parent_clause === 2);
@@ -1264,7 +1264,7 @@ describe('Mixed Logic Run-Grouping Evaluation', () => {
 
     if (!fs) return;
 
-    const data = JSON.parse(fs.readFileSync('./data/keys_optimized.json', 'utf8'));
+    const data = JSON.parse(fs.readFileSync('./data/dst-data.json', 'utf8'));
     const engine = DSTCore.create(data);
 
     const g1_2 = data.navigation.criteria.find(c => c.crit === 'G' && c.clause === 2);
@@ -1290,7 +1290,7 @@ describe('Mixed Logic Run-Grouping Evaluation', () => {
 
     if (!fs) return;
 
-    const data = JSON.parse(fs.readFileSync('./data/keys_optimized.json', 'utf8'));
+    const data = JSON.parse(fs.readFileSync('./data/dst-data.json', 'utf8'));
     const engine = DSTCore.create(data);
 
     const g1_2 = data.navigation.criteria.find(c => c.crit === 'G' && c.clause === 2);
