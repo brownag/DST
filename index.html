@@ -97,7 +97,14 @@
 
                 <div class="about-section">
                     <h2>Data Summary</h2>
-                    <p x-show="engine">This dataset contains <strong x-text="engine ? engine.allCriteria.length : '—'"></strong> decision criteria across <strong x-text="engine ? Object.keys(engine.outcomes).length : '—'"></strong> soil taxonomy classifications. The glossary includes <strong x-text="engine ? Object.keys(engine.glossary).length : '—'"></strong> soil science terms, mapped across <strong x-text="engine ? Object.keys(engine.codeNames).length : '—'"></strong> taxonomic soil names (Orders, Suborders, Great Groups, and Subgroups).</p>
+                    <p x-show="engine">This dataset includes <strong x-text="taxonomyStats.criteria"></strong> decision criteria organized across the USDA soil taxonomy hierarchy:</p>
+                    <ul x-show="engine" style="margin: 10px 0 10px 20px;">
+                        <li><strong x-text="taxonomyStats.orders + ' Orders'"></strong></li>
+                        <li><strong x-text="taxonomyStats.suborders + ' Suborders'"></strong></li>
+                        <li><strong x-text="taxonomyStats.greatGroups + ' Great Groups'"></strong></li>
+                        <li><strong x-text="taxonomyStats.subgroups + ' Subgroups'"></strong></li>
+                    </ul>
+                    <p x-show="engine">The glossary includes <strong x-text="engine ? Object.keys(engine.glossary).length : '—'"></strong> soil taxonomy terms — diagnostic quantities, features, properties, and related concepts used in the taxonomic system.</p>
                 </div>
 
                 <div class="about-section">
@@ -341,6 +348,21 @@
                 getClassificationBreadcrumb() { return this.engine ? this.engine.getClassificationBreadcrumb() : ''; },
                 removeCodePrefix(content, code) { return this.engine.removeCodePrefix(content, code); },
                 getCheckedCriteriaForSidebar() { return this.engine ? this.engine.getCheckedLeaves() : []; },
+
+                get taxonomyStats() {
+                    if (!this.engine || !this.engine.codeNames) {
+                        return { criteria: 0, orders: 0, suborders: 0, greatGroups: 0, subgroups: 0 };
+                    }
+                    const codes = Object.keys(this.engine.codeNames);
+                    const stats = {
+                        criteria: this.engine.allCriteria ? this.engine.allCriteria.length : 0,
+                        orders: codes.filter(k => k.length === 1).length,
+                        suborders: codes.filter(k => k.length === 2).length,
+                        greatGroups: codes.filter(k => k.length === 3).length,
+                        subgroups: codes.filter(k => k.length === 4 || k.length === 5).length,
+                    };
+                    return stats;
+                },
 
                 // --- Data Initialization ---
 
