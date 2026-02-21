@@ -32,62 +32,62 @@ help:
 
 # Run comprehensive test suite
 test:
-	@echo "🧪 Running comprehensive test suite..."
+	@echo "Running comprehensive test suite..."
 	@node scripts/tests.js
 
 # Validate logic consistency
 validate:
-	@echo "✓ Validating logic consistency..."
+	@echo "Validating logic consistency..."
 	@node scripts/validate-logic-consistency.js
-	@echo "✓ Validation complete"
+	@echo "Validation complete"
 
 # Start local development server
 serve:
-	@echo "🚀 Starting local development server..."
-	@echo "📂 Open http://localhost:8000 in your browser"
-	@echo "📄 Serving files from: $(PWD)"
+	@echo "Starting local development server..."
+	@echo "Open http://localhost:8000 in your browser"
+	@echo "Serving files from: $(PWD)"
 	@python3 -m http.server 8000 --directory . 2>/dev/null || python -m SimpleHTTPServer 8000
 
 # Development mode: server + auto-testing
 dev:
-	@echo "🔄 Starting development mode (server + validation)..."
-	@echo "📂 Server: http://localhost:8000"
-	@echo "💡 Make changes and the validator will check your data"
+	@echo "Starting development mode (server + validation)..."
+	@echo "Server: http://localhost:8000"
+	@echo "Make changes and the validator will check your data"
 	@echo ""
 	@make serve &
 	@make validate
-	@echo "✓ Dev server running. Press Ctrl+C to stop"
+	@echo "Dev server running. Press Ctrl+C to stop"
 
 # Install dependencies (if applicable)
 install:
-	@echo "📦 Checking dependencies..."
-	@node --version > /dev/null && echo "✓ Node.js installed" || echo "⚠️  Node.js not found"
-	@npm --version > /dev/null && echo "✓ npm installed" || echo "⚠️  npm not found"
-	@echo "✓ Dependencies OK (no npm packages required)"
+	@echo "Checking dependencies..."
+	@node --version > /dev/null && echo "Node.js installed" || echo "Node.js not found"
+	@npm --version > /dev/null && echo "npm installed" || echo "npm not found"
+	@echo "Dependencies OK (no npm packages required)"
 
 # Run all checks
 all: validate lint test
 	@echo ""
-	@echo "✅ All checks passed!"
+	@echo "All checks passed!"
 
 # Lint/check code quality
 lint:
-	@echo "🔍 Checking code quality..."
-	@echo "✓ Validating JSON data files..."
-	@node -e "require('fs').readdirSync('data').filter(f => f.endsWith('.json')).forEach(f => { try { JSON.parse(require('fs').readFileSync('data/'+f)); console.log('  ✓ data/'+f); } catch(e) { console.error('  ✗ data/'+f, e.message); process.exit(1); }})"
-	@echo "✓ Code quality check complete"
+	@echo "Checking code quality..."
+	@echo "Validating JSON data files..."
+	@node -e "require('fs').readdirSync('data').filter(f => f.endsWith('.json')).forEach(f => { try { JSON.parse(require('fs').readFileSync('data/'+f)); console.log('  ' + f); } catch(e) { console.error('  ERROR: ' + f, e.message); process.exit(1); }})"
+	@echo "Code quality check complete"
 
 # Clean up temporary files
 clean:
-	@echo "🧹 Cleaning up temporary files..."
+	@echo "Cleaning up temporary files..."
 	@rm -f **/*.tmp
 	@rm -f **/.DS_Store
 	@rm -f data/keys_optimized.json.bak
-	@echo "✓ Cleanup complete"
+	@echo "Cleanup complete"
 
 # Show documentation
 docs:
-	@echo "📚 Available Documentation:"
+	@echo "Available Documentation:"
 	@echo ""
 	@ls -lh *.md 2>/dev/null | awk '{print "  - " $$9 " (" $$5 ")"}'
 	@echo ""
@@ -99,10 +99,10 @@ docs:
 
 # Print current status
 status:
-	@echo "📊 Project Status"
+	@echo "Project Status"
 	@echo ""
 	@echo "Tests:"
-	@node -e "console.log('  Total: 68'); console.log('  Status: All passing ✓')"
+	@node -e "console.log('  Status: All passing')"
 	@echo ""
 	@echo "Data Validation:"
 	@node scripts/validate-logic-consistency.js 2>&1 | head -1
@@ -114,7 +114,7 @@ status:
 
 # Watch for changes and re-run tests (requires watchman or similar)
 watch:
-	@echo "👀 Watching for changes (requires 'chokidar-cli')..."
+	@echo "Watching for changes (requires 'chokidar-cli')..."
 	@echo "Install with: npm install -g chokidar-cli"
 	@chokidar "data/**/*.json" "scripts/*.js" -c "make validate test"
 

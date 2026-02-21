@@ -8,7 +8,7 @@ Format: [Keep a Changelog](https://keepachangelog.com/en/1.0.0/). Versioning: [S
 - **Dark mode**: Three-state toggle (auto/light/dark) with CSS custom properties and FOUC prevention
 - **About tab**: In-app developer documentation with data schema, engine API, and live statistics
 - **DSTCore engine** (`scripts/dst-core.js`): Standalone pure logic engine (no DOM, dual export for browser + Node.js)
-- **Test suite**: 54 tests in `scripts/tests.js` covering satisfaction logic, hierarchy, navigation, edge cases, and classification helpers
+- **Test suite**: Test suite in `scripts/tests.js` covering satisfaction logic, hierarchy, navigation, edge cases, and classification helpers
 - **Browser test runner**: `test.html` with visual output and auto-run
 - **Python pipeline**: 6-step preprocessing from USDA source JSON (`build_tree.py` → `validate_schema.py`)
 - **Classification helpers**: `getClassificationPath()`, `getCurrentClassification()`, `getClassificationBreadcrumb()`

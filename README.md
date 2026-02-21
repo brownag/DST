@@ -28,7 +28,7 @@ manifest.json              PWA manifest
 test.html                  Browser test runner
 scripts/
   app_helpers.js            State management helpers
-  tests.js                  50-test suite
+  tests.js                  Test suite
   build_tree.py             Data pipeline (6 steps)
   apply_phase1-3.py
   populate_code_names.py
@@ -41,7 +41,7 @@ docs/                       Developer documentation
 ## Testing
 
 ```bash
-node scripts/tests.js                 # Run 50 tests via Node.js
+node scripts/tests.js                 # Run test suite via Node.js
 python3 -m http.server 8000           # Or open test.html in browser
 ```
 

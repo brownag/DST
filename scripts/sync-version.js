@@ -23,7 +23,7 @@ try {
   const version = packageJson.version;
 
   if (!version) {
-    console.error('✗ Error: No version field in package.json');
+    console.error('Error: No version field in package.json');
     process.exit(1);
   }
 
@@ -37,10 +37,10 @@ try {
   // Write manifest.json back
   fs.writeFileSync(manifestPath, JSON.stringify(manifest, null, 2) + '\n');
 
-  console.log(`✓ Version synced: ${oldVersion || 'N/A'} → ${version}`);
+  console.log(`Version synced: ${oldVersion || 'N/A'} -> ${version}`);
   console.log(`  package.json: ${version}`);
   console.log(`  manifest.json: ${version}`);
 } catch (error) {
-  console.error('✗ Error syncing versions:', error.message);
+  console.error('Error syncing versions:', error.message);
   process.exit(1);
 }

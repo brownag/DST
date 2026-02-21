@@ -1429,7 +1429,7 @@ function printSummary() {
 }
 
 function runAllTests() {
-  console.log('\n\ud83e\uddea STARTING COMPREHENSIVE TEST SUITE\n');
+  console.log('\nStarting test suite\n');
   console.log(`Timestamp: ${new Date().toISOString()}`);
 
   TEST_SUITE.startTime = Date.now();

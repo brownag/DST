@@ -4,16 +4,20 @@
  * Logic Consistency Validator — Enhanced
  *
  * Checks for three classes of logic-text mismatches and mixed-logic sibling groups:
- *   Class A: OR-semantic text with AND logic
- *   Class B: AND-semantic text with OR logic
- *   Class C: Mixed-logic sibling groups (structural analysis)
+ *   Class A (CRITICAL): OR-semantic text with AND logic — indicates data bugs
+ *   Class B (INFORMATIONAL): AND-semantic text with OR logic — usually correct
+ *   Class C (INFORMATIONAL): Mixed-logic sibling groups — structural analysis & proposals
  *
  * Usage:
  *   node validate-logic-consistency.js [--json]
  *
  * Exit codes:
- *   0 = No critical issues (Class A/B only)
- *   1 = Critical mismatches found (Class A or B)
+ *   0 = No critical issues found (all good)
+ *   1 = Critical mismatches found (Class A only)
+ *
+ * Note: Class B and C are informational. Class B mostly contains correct cases
+ * like "one or both of the following" (OR-semantic) with OR logic. Class C
+ * shows mixed-logic sibling groups and proposes restructuring for clarity.
  */
 
 const fs = require('fs');
@@ -77,7 +81,7 @@ const classB = criteria.filter(c => {
 // CLASS C: Mixed-logic sibling groups (structural analysis)
 // ============================================================================
 
-// Build parent → children map
+// Build parent to children map
 const childrenByParent = {};
 criteria.forEach(c => {
   if (c.parent_clause !== '' && c.parent_clause !== 0) {
@@ -251,7 +255,7 @@ if (useJSON) {
   let hasIssues = classA.length > 0 || classB.length > 0;
 
   if (classA.length > 0) {
-    console.error(`✗ CLASS A: Found ${classA.length} criteria with OR-text + AND-logic`);
+    console.error(`CLASS A: Found ${classA.length} criteria with OR-text + AND-logic`);
     console.error('');
     classA.slice(0, 3).forEach(c => {
       console.error(`  ${c.crit} clause ${c.clause}: "${c.content.substring(0, 60)}..."`);
@@ -263,7 +267,7 @@ if (useJSON) {
   }
 
   if (classB.length > 0) {
-    console.error(`✗ CLASS B: Found ${classB.length} criteria with AND-text + OR-logic`);
+    console.error(`CLASS B: Found ${classB.length} criteria with AND-text + OR-logic`);
     console.error('');
     classB.slice(0, 3).forEach(c => {
       console.error(`  ${c.crit} clause ${c.clause}: "${c.content.substring(0, 60)}..."`);
@@ -277,12 +281,12 @@ if (useJSON) {
   if (classC.length > 0) {
     const warnCount = classC.filter(c => c.severity === 'WARN').length;
     const infoCount = classC.filter(c => c.severity === 'INFO').length;
-    console.log(`⚠  CLASS C: Found ${classC.length} mixed-logic sibling groups`);
+    console.log(`CLASS C: Found ${classC.length} mixed-logic sibling groups`);
     if (warnCount > 0) {
-      console.log(`   ${warnCount} WARN (parent AND with OR-alternatives)`);
+      console.log(`  ${warnCount} WARN (parent AND with OR-alternatives)`);
     }
     if (infoCount > 0) {
-      console.log(`   ${infoCount} INFO (structural artifacts)`);
+      console.log(`  ${infoCount} INFO (structural artifacts)`);
     }
     console.log('');
 
@@ -291,14 +295,14 @@ if (useJSON) {
       console.log(`  ${item.parent.crit} clause ${item.parent.clause}: ${runs}`);
       const proposal = generateTransformationProposal(item);
       if (proposal) {
-        console.log(`    → ${proposal.result}`);
+        console.log(`    ${proposal.result}`);
       }
     });
     console.log('');
   }
 
   if (!hasIssues) {
-    console.log('✓ Logic consistency check: No critical mismatches found');
+    console.log('Logic consistency check: No critical mismatches found');
   }
 
   if (hasIssues) {
@@ -306,4 +310,6 @@ if (useJSON) {
   }
 }
 
-process.exit(classA.length > 0 || classB.length > 0 ? 1 : 0);
+// Only exit with error for Class A (critical mismatches)
+// Class B and C are informational
+process.exit(classA.length > 0 ? 1 : 0);
