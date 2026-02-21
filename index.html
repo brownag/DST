@@ -209,7 +209,6 @@
                             </h3>
                             <template x-for="criterion in group.items" :key="getCriterionId(criterion)">
                                 <div class="criterion"
-                                     x-show="showSatisfiedCriteria || !isClauseSatisfied(criterion) || !isLeafCriterion(criterion)"
                                      :class="{
                                          'criterion-header': !isLeafCriterion(criterion) && criterion.depth === 0,
                                          'criterion-parent': !isLeafCriterion(criterion) && criterion.depth > 0,
