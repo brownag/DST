@@ -1,6 +1,7 @@
 {
   "name": "Digital Keys to Soil Taxonomy",
   "short_name": "Soil Keys",
+  "version": "1.0.0",
   "description": "Interactive USDA Soil Classification System",
   "start_url": "./",
   "scope": "./",

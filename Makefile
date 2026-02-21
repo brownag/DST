@@ -1,4 +1,4 @@
-.PHONY: help test validate serve clean install lint dev all
+.PHONY: help test validate serve clean install lint dev all version sync-version
 
 # DST (Digital Keys to Soil Taxonomy) Development Makefile
 # Run 'make help' to see available commands
@@ -7,7 +7,7 @@ help:
 	@echo "Digital Keys to Soil Taxonomy - Development Commands"
 	@echo ""
 	@echo "Core Commands:"
-	@echo "  make test              - Run comprehensive test suite (68 tests)"
+	@echo "  make test              - Run comprehensive test suite"
 	@echo "  make validate          - Validate logic consistency in data"
 	@echo "  make serve             - Start local development server"
 	@echo "  make dev               - Start server and run tests in watch mode"
@@ -17,6 +17,8 @@ help:
 	@echo "  make lint              - Check code style and issues"
 	@echo "  make clean             - Clean up temporary files"
 	@echo "  make all               - Run all checks (validate, lint, test)"
+	@echo "  make version           - Show version (from package.json)"
+	@echo "  make sync-version      - Sync version to manifest.json"
 	@echo ""
 	@echo "Documentation:"
 	@echo "  make docs              - Show available documentation files"
@@ -26,6 +28,7 @@ help:
 	@echo "  make serve             # Start dev server on http://localhost:8000"
 	@echo "  make dev               # Start server + watch tests"
 	@echo "  make validate          # Check for data quality issues"
+	@echo "  make version           # Show current version"
 
 # Run comprehensive test suite
 test:
@@ -114,6 +117,14 @@ watch:
 	@echo "👀 Watching for changes (requires 'chokidar-cli')..."
 	@echo "Install with: npm install -g chokidar-cli"
 	@chokidar "data/**/*.json" "scripts/*.js" -c "make validate test"
+
+# Show version
+version:
+	@node -e "console.log(require('./package.json').version)"
+
+# Sync version from package.json to manifest.json
+sync-version:
+	@node scripts/sync-version.js
 
 # Default target
 .DEFAULT_GOAL := help
