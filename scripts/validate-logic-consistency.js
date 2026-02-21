@@ -232,6 +232,8 @@ if (useJSON) {
   });
 
   classC.forEach(item => {
+    if (!item.parent) return; // Skip if parent not found
+
     const runBreakdown = item.runs
       .map(r => `${r.logic}[${r.items.map(i => i.clause).join(',')}]`)
       .join(' ');

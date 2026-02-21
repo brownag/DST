@@ -285,9 +285,13 @@ def process_code_group(crit, items):
 
         if level == 0 and header_is_outcome:
             # Header for 3+ letter code → outcome (depth -1)
-            record['depth'] = -1
-            outcome = record
-            # Keep it in stack so children can reference it as parent
+            outcome = record.copy()
+            outcome['depth'] = -1
+            # Keep the header as depth 0 nav criterion (like Order/Suborder headers)
+            # so children can reference it as parent
+            record['depth'] = 0
+            nav.append(record)
+            # Keep in stack so children can reference it as parent
         else:
             nav.append(record)
 
