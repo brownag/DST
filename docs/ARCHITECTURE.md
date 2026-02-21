@@ -95,7 +95,7 @@ manifest.json              PWA manifest
 test.html                  Test runner (browser)
 scripts/
   app_helpers.js           State management helpers
-  tests.js                 50-test suite
+  tests.js                 Test suite
   build_tree.py            Pipeline steps 1-6
   apply_phase1.py
   apply_phase2.py

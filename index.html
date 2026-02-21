@@ -16,11 +16,20 @@
 </head>
 <body>
     <div class="container" x-data="app()" x-init="init()">
-        <aside class="sidebar">
-            <div class="sidebar-controls">
-                <button class="reset-btn" @click="reset()">Reset All</button>
-                <button class="theme-toggle" @click="cycleTheme()">
-                    <span x-text="themeIcon"></span> <span x-text="themeLabel"></span>
+        <aside class="sidebar" :class="{ collapsed: sidebarCollapsed }">
+            <div class="sidebar-title">Digital Keys to<br>Soil Taxonomy</div>
+            <div class="sidebar-controls" style="display: flex; gap: 6px; align-items: center; justify-content: center; margin-bottom: 15px;">
+                <button class="icon-btn" @click="currentTab = 'classify'" :title="currentTab === 'classify' ? 'Classify (active)' : 'Back to Classify'">⌂</button>
+                <button class="icon-btn" @click="reset()" title="Reset all selections">⟳</button>
+                <button class="icon-btn" @click="showSatisfiedCriteria = !showSatisfiedCriteria" :title="showSatisfiedCriteria ? 'Hide satisfied criteria' : 'Show satisfied criteria'">
+                    <span x-text="showSatisfiedCriteria ? '⊙' : '⊘'"></span>
+                </button>
+                <button class="icon-btn" @click="cycleTheme()" :title="'Theme: ' + themeLabel">
+                    <span x-text="themeIcon"></span>
+                </button>
+                <button class="icon-btn" @click="currentTab = 'about'" :title="currentTab === 'about' ? 'About (active)' : 'About this app'">ℹ</button>
+                <button class="icon-btn" @click="sidebarCollapsed = !sidebarCollapsed" :title="sidebarCollapsed ? 'Expand sidebar' : 'Collapse sidebar'">
+                    <span x-text="sidebarCollapsed ? '▶' : '◀'"></span>
                 </button>
             </div>
 
@@ -39,7 +48,7 @@
                 <template x-if="getClassificationPath().length === 0">
                     <p class="hint-text">Select criteria to begin classification</p>
                 </template>
-                <template x-for="step in getClassificationPath()" :key="step.code">
+                <template x-for="(step, idx) in getClassificationPath()" :key="step.levelName + idx">
                     <div class="classification-step" :class="step.satisfied ? 'satisfied' : 'pending'">
                         <div class="step-level" x-text="step.levelName"></div>
                         <span class="step-name" x-text="step.name"></span>
@@ -65,11 +74,6 @@
 
         <div class="main">
             <header>
-                <h1>Digital Keys to Soil Taxonomy</h1>
-                <div class="tab-bar">
-                    <button class="tab-btn" :class="{ active: currentTab === 'classify' }" @click="currentTab = 'classify'">Classify</button>
-                    <button class="tab-btn" :class="{ active: currentTab === 'about' }" @click="currentTab = 'about'">About</button>
-                </div>
                 <p x-show="currentTab === 'classify' && !findCurrentLevel()">Check criteria to classify your soil</p>
                 <div class="breadcrumb" x-show="currentTab === 'classify' && findCurrentLevel()" x-text="getClassificationBreadcrumb()"></div>
             </header>
@@ -83,32 +87,15 @@
                     <p>No internet connection is required after the first visit. The entire application — code, data, and glossary — is cached locally by the Service Worker.</p>
                 </div>
 
+
                 <div class="about-section">
                     <h2>Data Summary</h2>
-                    <p>All taxonomy data is generated from official USDA source files through a Python preprocessing pipeline.</p>
-                    <div class="about-stats" x-show="engine">
-                        <div class="stat-card">
-                            <div class="stat-value" x-text="engine ? engine.allCriteria.length : '—'"></div>
-                            <div class="stat-label">Navigation Criteria</div>
-                        </div>
-                        <div class="stat-card">
-                            <div class="stat-value" x-text="engine ? Object.keys(engine.outcomes).length : '—'"></div>
-                            <div class="stat-label">Classification Outcomes</div>
-                        </div>
-                        <div class="stat-card">
-                            <div class="stat-value" x-text="engine ? Object.keys(engine.glossary).length : '—'"></div>
-                            <div class="stat-label">Glossary Terms</div>
-                        </div>
-                        <div class="stat-card">
-                            <div class="stat-value" x-text="engine ? Object.keys(engine.codeNames).length : '—'"></div>
-                            <div class="stat-label">Taxonomic Names</div>
-                        </div>
-                    </div>
+                    <p x-show="engine">This dataset contains <strong x-text="engine ? engine.allCriteria.length : '—'"></strong> decision criteria across <strong x-text="engine ? Object.keys(engine.outcomes).length : '—'"></strong> soil taxonomy classifications. The glossary includes <strong x-text="engine ? Object.keys(engine.glossary).length : '—'"></strong> soil science terms, mapped across <strong x-text="engine ? Object.keys(engine.codeNames).length : '—'"></strong> taxonomic soil names (Orders, Suborders, Great Groups, and Subgroups).</p>
                 </div>
 
                 <div class="about-section">
-                    <h2>JSON Data Schema <span class="version-badge">v3.2.0</span></h2>
-                    <p>The application is powered by <code>data/keys_optimized.json</code>, a ~3.5 MB file generated from USDA source data. The file contains five top-level sections:</p>
+                    <h2>JSON Data Schema <span class="version-badge">v1.0.0</span></h2>
+                    <p>The application is powered by <code>data/dst-data.json</code>, a ~3.5 MB file generated from USDA source data. The file contains five top-level sections:</p>
                     <table class="about-table">
                         <thead><tr><th>Section</th><th>Description</th></tr></thead>
                         <tbody>
@@ -164,18 +151,19 @@
                 </div>
 
                 <div class="about-section">
-                    <h2>Technology</h2>
-                    <table class="about-table">
-                        <thead><tr><th>Component</th><th>Technology</th><th>Notes</th></tr></thead>
-                        <tbody>
-                            <tr><td>UI Framework</td><td>Alpine.js v3.13.3</td><td>Loaded via CDN — no build step</td></tr>
-                            <tr><td>Logic Engine</td><td>Vanilla JavaScript (IIFE)</td><td><code>scripts/dst-core.js</code> — browser + Node.js</td></tr>
-                            <tr><td>Styling</td><td>CSS Custom Properties</td><td>Light/dark themes, soil-teal palette</td></tr>
-                            <tr><td>Offline</td><td>Service Worker</td><td>Cache-first static, network-first data</td></tr>
-                            <tr><td>Data Pipeline</td><td>Python 3</td><td>6-step preprocessing from USDA source JSON</td></tr>
-                            <tr><td>Testing</td><td>Custom harness</td><td>54 tests — Node.js + browser</td></tr>
-                        </tbody>
-                    </table>
+                    <h2>Technology Stack</h2>
+                    <p><strong>Frontend:</strong> Alpine.js v3.13.3 (loaded via CDN), CSS with custom properties for light/dark theming</p>
+                    <p><strong>Engine:</strong> Standalone JavaScript logic engine (<code>scripts/dst-core.js</code>) with no dependencies. Works identically in browser and Node.js.</p>
+                    <p><strong>Data:</strong> Python preprocessing pipeline generates optimized JSON from USDA source files. Service Worker enables offline-first caching.</p>
+                    <p><strong>Testing:</strong> Custom test harness with Node.js and browser execution modes.</p>
+                </div>
+
+                <div class="about-section">
+                    <h2>Resources</h2>
+                    <ul>
+                        <li><a href="https://github.com/ncss-tech/SoilKnowledgeBase" target="_blank" rel="noopener">Soil Knowledge Base</a> — Official NCSS taxonomy data repository</li>
+                        <li><a href="https://www.nrcs.usda.gov/resources/guides-and-instructions/keys-to-soil-taxonomy" target="_blank" rel="noopener">USDA Keys to Soil Taxonomy</a> — Official classification guide</li>
+                    </ul>
                 </div>
 
                 <div class="about-section">
@@ -187,6 +175,14 @@
                         <li><strong>Source Data</strong>: <a href="https://github.com/ncss-tech/SoilKnowledgeBase" target="_blank" rel="noopener">SoilKnowledgeBase (GitHub)</a></li>
                     </ul>
                 </div>
+
+                <div class="about-section about-footer">
+                    <div style="text-align: center; font-size: 13px; color: var(--color-text-muted);">
+                        <p><strong>Digital Keys to Soil Taxonomy</strong><br>
+                        Version <span x-text="appVersion || '1.0.0'"></span></p>
+                        <p>Created by Andrew G. Brown</p>
+                    </div>
+                </div>
             </div>
 
             <!-- Classify Tab -->
@@ -197,7 +193,7 @@
                     </template>
 
                     <template x-for="group in visibleGroups" :key="group.code">
-                        <div class="criteria-group" :class="{ complete: isGroupSatisfied(group.code) }">
+                        <div class="criteria-group" x-show="showSatisfiedCriteria || !isGroupSatisfied(group.code)" :class="{ complete: isGroupSatisfied(group.code) }">
                             <h3>
                                 <span x-text="group.code"></span>: <span x-text="group.label"></span>
                                 <template x-if="isGroupSatisfied(group.code)">
@@ -206,6 +202,7 @@
                             </h3>
                             <template x-for="criterion in group.items" :key="getCriterionId(criterion)">
                                 <div class="criterion"
+                                     x-show="showSatisfiedCriteria || !isClauseSatisfied(criterion) || !isLeafCriterion(criterion)"
                                      :class="{
                                          'criterion-header': !isLeafCriterion(criterion) && criterion.depth === 0,
                                          'criterion-parent': !isLeafCriterion(criterion) && criterion.depth > 0,
@@ -236,9 +233,14 @@
 
                 <div class="loading" x-show="loading"><p>Loading criteria...</p></div>
 
-                <div class="info-panel" :class="{ hidden: !currentTerm }">
-                    <template x-if="currentTerm">
-                        <div>
+                <div class="info-panel" :class="{ hidden: !infoPanelOpen }">
+                    <div class="info-panel-controls">
+                        <input type="text" x-model="definitionSearch" class="search-input" placeholder="Filter definitions...">
+                        <button class="icon-btn" @click="infoPanelOpen = false" title="Close panel">✕</button>
+                        <button class="icon-btn" @click="viewedHistory = []; definitionSearch = ''" title="Clear all history">⊟</button>
+                    </div>
+                    <template x-if="currentTerm && infoPanelOpen">
+                        <div style="padding: 20px; overflow-y: auto; flex: 1;">
                             <div class="info-header">Term Definition</div>
                             <div class="current-term">
                                 <h3 x-text="currentTerm.term"></h3>
@@ -246,7 +248,7 @@
                             </div>
                             <div class="info-header">Recently Viewed</div>
                             <div class="viewed-history">
-                                <template x-for="item in viewedHistory" :key="item.id">
+                                <template x-for="item in getFilteredHistory()" :key="item.id">
                                     <div class="history-item" @click="selectViewed(item)"><strong x-text="item.term"></strong></div>
                                 </template>
                             </div>
@@ -270,6 +272,7 @@
         function app() {
             return {
                 // --- State ---
+                appVersion: '1.0.0',
                 engine: null,
                 loading: true,
                 error: null,
@@ -279,6 +282,10 @@
                 viewedHistory: [],
                 currentTab: 'classify',
                 theme: localStorage.getItem('dst-theme') || 'auto',
+                showSatisfiedCriteria: true,
+                sidebarCollapsed: false,
+                infoPanelOpen: false,
+                definitionSearch: '',
 
                 // --- Theme ---
 
@@ -325,7 +332,7 @@
                             if (self.theme === 'auto') self.applyTheme();
                         });
 
-                        var response = await fetch('data/keys_optimized.json');
+                        var response = await fetch('data/dst-data.json');
                         if (!response.ok) throw new Error('HTTP ' + response.status);
                         var data = await response.json();
 
@@ -359,11 +366,21 @@
                     this.visibleGroups = this.engine.getVisibleGroups();
                 },
 
+                getFilteredHistory() {
+                    if (!this.definitionSearch) return this.viewedHistory;
+                    var search = this.definitionSearch.toLowerCase();
+                    return this.viewedHistory.filter(function(item) {
+                        return item.term.toLowerCase().includes(search);
+                    });
+                },
+
                 // --- Glossary ---
 
                 handleTermClick(event) {
                     var span = event.target.closest('.glossary-term');
                     if (span) {
+                        event.preventDefault();
+                        event.stopPropagation();
                         var termId = span.getAttribute('data-id');
                         this.selectTerm(termId);
                     }
@@ -382,6 +399,7 @@
                     var term = this.engine.glossary[termId];
                     if (term) {
                         this.currentTerm = term;
+                        this.infoPanelOpen = true;
                         if (!this.viewedHistory.find(function(h) { return h.id === termId; })) {
                             this.viewedHistory.unshift(term);
                             if (this.viewedHistory.length > 10) this.viewedHistory.pop();
@@ -390,6 +408,7 @@
                 },
                 selectViewed(item) {
                     this.currentTerm = item;
+                    this.infoPanelOpen = true;
                 }
             };
         }

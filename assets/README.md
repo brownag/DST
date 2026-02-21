@@ -181,9 +181,9 @@ To validate your asset files before running the script:
 
 ```bash
 # Check if files are valid JSON
-python3 -c "import json; json.load(open('assets/2022_KST_codes.json'))" && echo "✓ codes.json valid"
-python3 -c "import json; json.load(open('assets/2022_KST_criteria_EN.json'))" && echo "✓ criteria.json valid"
-python3 -c "import json; json.load(open('assets/2014_KST_EN_featurelist.json'))" && echo "✓ featurelist.json valid"
+python3 -c "import json; json.load(open('assets/2022_KST_codes.json'))" && echo "codes.json valid"
+python3 -c "import json; json.load(open('assets/2022_KST_criteria_EN.json'))" && echo "criteria.json valid"
+python3 -c "import json; json.load(open('assets/2014_KST_EN_featurelist.json'))" && echo "featurelist.json valid"
 ```
 
 ---

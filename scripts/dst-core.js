@@ -3,7 +3,7 @@
  * No DOM, no Alpine.js, no UI. Works in browser or Node.js.
  *
  * Usage:
- *   const engine = DSTCore.create(data);  // data = parsed keys_optimized.json
+ *   const engine = DSTCore.create(data);  // data = parsed dst-data.json
  *   engine.check('AAA_5');                // check a criterion
  *   engine.uncheck('AAA_5');
  *   engine.getVisibleGroups();            // get current visible groups
@@ -82,10 +82,45 @@ var DSTCore = (function () {
 
         engine.evaluateSiblingLogic = function (siblings, parentLogic) {
             var self = this;
-            if (parentLogic === 'AND') {
-                return siblings.every(function (s) { return self.isClauseSatisfied(s); });
+
+            // Fast path: uniform logic — use existing behavior unchanged
+            var firstLogic = siblings.length > 0 ? siblings[0].logic : parentLogic;
+            var uniform = siblings.every(function (s) { return s.logic === firstLogic; });
+            if (uniform) {
+                if (parentLogic === 'AND') {
+                    return siblings.every(function (s) { return self.isClauseSatisfied(s); });
+                }
+                return siblings.some(function (s) { return self.isClauseSatisfied(s); });
             }
-            return siblings.some(function (s) { return self.isClauseSatisfied(s); });
+
+            // Mixed logic: group consecutive same-logic siblings into runs
+            var runs = [];
+            var currentLogic = siblings[0].logic;
+            var currentItems = [siblings[0]];
+            for (var i = 1; i < siblings.length; i++) {
+                if (siblings[i].logic === currentLogic) {
+                    currentItems.push(siblings[i]);
+                } else {
+                    runs.push({ logic: currentLogic, items: currentItems });
+                    currentItems = [siblings[i]];
+                    currentLogic = siblings[i].logic;
+                }
+            }
+            runs.push({ logic: currentLogic, items: currentItems });
+
+            // Evaluate each run by its own logic
+            var runResults = runs.map(function (run) {
+                if (run.logic === 'AND') {
+                    return run.items.every(function (s) { return self.isClauseSatisfied(s); });
+                }
+                return run.items.some(function (s) { return self.isClauseSatisfied(s); });
+            });
+
+            // Combine runs with parent logic
+            if (parentLogic === 'AND') {
+                return runResults.every(function (r) { return r; });
+            }
+            return runResults.some(function (r) { return r; });
         };
 
         engine.isGroupSatisfied = function (critCode) {
@@ -188,8 +223,20 @@ var DSTCore = (function () {
         engine.getClassificationPath = function () {
             var levelNames = ['Order', 'Suborder', 'Great Group', 'Subgroup'];
             var currentCode = this.findCurrentLevel();
-            if (!currentCode) return [];
             var path = [];
+
+            if (!currentCode) {
+                for (var j = 1; j <= 4; j++) {
+                    path.push({
+                        code: '?',
+                        name: '?',
+                        levelName: levelNames[j - 1] || 'Level ' + j,
+                        satisfied: false
+                    });
+                }
+                return path;
+            }
+
             for (var i = 1; i <= currentCode.length && i <= 4; i++) {
                 var code = currentCode.substring(0, i);
                 var name = this.codeNames[code] || code;
@@ -200,15 +247,16 @@ var DSTCore = (function () {
                     satisfied: true
                 });
             }
-            if (currentCode.length < 4) {
-                var nextLevel = currentCode.length + 1;
+
+            for (var k = currentCode.length + 1; k <= 4; k++) {
                 path.push({
                     code: '?',
-                    name: '\u2014',
-                    levelName: levelNames[nextLevel - 1] || 'Level ' + nextLevel,
+                    name: '?',
+                    levelName: levelNames[k - 1] || 'Level ' + k,
                     satisfied: false
                 });
             }
+
             return path;
         };
 
