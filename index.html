@@ -22,6 +22,7 @@
                 <button class="theme-toggle" @click="cycleTheme()">
                     <span x-text="themeIcon"></span> <span x-text="themeLabel"></span>
                 </button>
+                <button class="theme-toggle" @click="showSatisfiedCriteria = !showSatisfiedCriteria" x-text="showSatisfiedCriteria ? 'Hide satisfied' : 'Show satisfied'"></button>
             </div>
 
             <!-- Current classification result -->
@@ -39,7 +40,7 @@
                 <template x-if="getClassificationPath().length === 0">
                     <p class="hint-text">Select criteria to begin classification</p>
                 </template>
-                <template x-for="step in getClassificationPath()" :key="step.code">
+                <template x-for="(step, idx) in getClassificationPath()" :key="step.levelName + idx">
                     <div class="classification-step" :class="step.satisfied ? 'satisfied' : 'pending'">
                         <div class="step-level" x-text="step.levelName"></div>
                         <span class="step-name" x-text="step.name"></span>
@@ -197,7 +198,7 @@
                     </template>
 
                     <template x-for="group in visibleGroups" :key="group.code">
-                        <div class="criteria-group" :class="{ complete: isGroupSatisfied(group.code) }">
+                        <div class="criteria-group" x-show="showSatisfiedCriteria || !isGroupSatisfied(group.code)" :class="{ complete: isGroupSatisfied(group.code) }">
                             <h3>
                                 <span x-text="group.code"></span>: <span x-text="group.label"></span>
                                 <template x-if="isGroupSatisfied(group.code)">

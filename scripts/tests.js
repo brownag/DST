@@ -832,10 +832,15 @@ describe('Criteria Index Validation', () => {
 
 describe('Classification Helpers', () => {
 
-  it('getClassificationPath returns empty for no satisfied groups', () => {
+  it('getClassificationPath shows all levels as unsatisfied when nothing selected', () => {
     const state = setupTestState();
     const path = state.getClassificationPath();
-    assertEqual(path.length, 0, 'No path when nothing satisfied');
+    assertEqual(path.length, 4, 'Should show 4 levels (Order, Suborder, Great Group, Subgroup)');
+    path.forEach((level, i) => {
+      assertFalse(level.satisfied, `Level ${i + 1} should be unsatisfied`);
+      assertEqual(level.code, '?', `Level ${i + 1} code should be ?`);
+      assertEqual(level.name, '?', `Level ${i + 1} name should be ?`);
+    });
   });
 
   it('getCurrentClassification returns empty for no satisfied groups', () => {

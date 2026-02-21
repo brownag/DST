@@ -223,8 +223,20 @@ var DSTCore = (function () {
         engine.getClassificationPath = function () {
             var levelNames = ['Order', 'Suborder', 'Great Group', 'Subgroup'];
             var currentCode = this.findCurrentLevel();
-            if (!currentCode) return [];
             var path = [];
+
+            if (!currentCode) {
+                for (var j = 1; j <= 4; j++) {
+                    path.push({
+                        code: '?',
+                        name: '?',
+                        levelName: levelNames[j - 1] || 'Level ' + j,
+                        satisfied: false
+                    });
+                }
+                return path;
+            }
+
             for (var i = 1; i <= currentCode.length && i <= 4; i++) {
                 var code = currentCode.substring(0, i);
                 var name = this.codeNames[code] || code;
@@ -235,15 +247,16 @@ var DSTCore = (function () {
                     satisfied: true
                 });
             }
-            if (currentCode.length < 4) {
-                var nextLevel = currentCode.length + 1;
+
+            for (var k = currentCode.length + 1; k <= 4; k++) {
                 path.push({
                     code: '?',
-                    name: '\u2014',
-                    levelName: levelNames[nextLevel - 1] || 'Level ' + nextLevel,
+                    name: '?',
+                    levelName: levelNames[k - 1] || 'Level ' + k,
                     satisfied: false
                 });
             }
+
             return path;
         };
 
