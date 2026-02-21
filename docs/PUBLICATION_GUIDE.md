@@ -4,14 +4,16 @@
 
 ### 1. Pre-Release Checks
 ```bash
-node scripts/tests.js                 # All tests pass
+npm test                              # All tests pass
+npm run validate                      # No critical logic issues
+node scripts/sync-version.js          # Sync version to manifest.json
 python3 -m http.server 8000           # Manual spot-check in browser
 ```
 
 ### 2. Tag and Release
 ```bash
-git tag -a v3.2.0 -m "Release 3.2.0: description"
-git push origin v3.2.0
+git tag -a v1.0.0 -m "Release 1.0.0: description"  # replace with actual version number
+git push origin v1.0.0
 ```
 Then create a GitHub Release from the tag.
 
@@ -32,7 +34,7 @@ git push
 ## Future Releases
 
 1. Update version in CITATION.cff and CHANGELOG.md
-2. Run tests
+2. Run `npm test` and `npm run validate`
 3. Create annotated tag and push
 4. Create GitHub Release
 5. Zenodo archives automatically (each version gets its own DOI)

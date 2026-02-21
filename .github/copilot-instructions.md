@@ -18,14 +18,18 @@ Modular separation of concerns:
 
 ## Data Pipeline
 ```
-assets/*.json \u2192 build_tree.py \u2192 apply_phase1.py \u2192 apply_phase2.py \u2192 apply_phase3.py \u2192 populate_code_names.py \u2192 validate_schema.py \u2192 data/keys_optimized.json
+assets/*.json \u2192 build_tree.py \u2192 apply_phase1.py \u2192 apply_phase2.py \u2192 apply_phase3.py \u2192 populate_code_names.py \u2192 validate_schema.py \u2192 data/dst-data.json
 ```
 Run: `python3 scripts/build_tree.py && python3 scripts/apply_phase1.py && python3 scripts/apply_phase2.py && python3 scripts/apply_phase3.py && python3 scripts/populate_code_names.py && python3 scripts/validate_schema.py`
 
-## Data Schema (v3.2.0)
-[data/keys_optimized.json](data/keys_optimized.json) \u2014 ~3.3 MB, structured as:
+## Data Schema (v1.0.0)
+[data/dst-data.json](data/dst-data.json) \u2014 ~3.5 MB, structured as:
 ```json
 {
+  "version": "1.0.0",
+  "generated": "2026-02-16",
+  "source": "USDA Keys to Soil Taxonomy (2022)",
+  "description": "Hierarchical soil taxonomy criteria and classification outcomes",
   "navigation": {
     "criteria": [
       {
@@ -35,7 +39,7 @@ Run: `python3 scripts/build_tree.py && python3 scripts/apply_phase1.py && python
         "parent_clause": "",
         "content": "A. Soils that have:",
         "content_html": "A. Soils that have:",
-        "logic": "FIRST",
+        "logic": "OR",
         "depth": 0
       }
     ]
@@ -44,23 +48,26 @@ Run: `python3 scripts/build_tree.py && python3 scripts/apply_phase1.py && python
   "glossary": { "term_id": { "term": "...", "definition": "..." } },
   "order_names": { "A": "Gelisols", ... },
   "code_names": { "A": "Gelisols", "AA": "Histels", ... },
-  "metadata": { "schema_version": "3.2.0", ... }
+  "metadata": { "schema_version": "1.0.0", ... }
 }
 ```
 
 Key fields on criteria:
 - `crit`: Hierarchical code (A-L Orders, AA-LL Suborders, AAA+ deeper levels)
 - `clause` / `parent_clause`: Numeric parent-child linking within a group
-- `logic`: FIRST, OR, AND, END \u2014 describes how this node\u2019s **children** relate
+- `logic`: AND or OR (source FIRST/END values normalized to OR at build time) \u2014 describes how this node\u2019s **children** relate
 - `depth`: 0=Order, 1=Suborder, 2=Great Group, 3=Subgroup, -1=Outcome
 - `content_html`: Pre-linkified glossary terms (rendered directly)
 
-Stats: 4,127 navigation criteria + 3,080 outcomes + 136 glossary terms.
+Stats: 5,706 navigation criteria + 3,073 outcomes + 124 glossary terms + 3,153 code names.
+
+> For complete field documentation see [docs/DATA_FORMAT.md](../docs/DATA_FORMAT.md).
 
 ## Satisfaction Algorithm
 The parent\u2019s `logic` field determines how its children are evaluated:
 - **AND** parent: ALL children must be satisfied
-- **OR / FIRST / END** parent: at least ONE child must be satisfied
+- **OR** parent: at least ONE child must be satisfied
+- **Mixed-logic siblings**: consecutive same-logic siblings form runs; each run evaluated by its own logic; runs combined by parent logic. See `evaluateSiblingLogic()`.
 - Leaf nodes (no clause-children): satisfied when checked by the user
 - A child\u2019s own `logic` field describes its own children, not its relationship to siblings
 
@@ -80,7 +87,7 @@ Progressive disclosure: show satisfied taxa + options for next level down.
 
 ## DSTCore Engine API
 ```javascript
-const engine = DSTCore.create(data);  // data = parsed keys_optimized.json
+const engine = DSTCore.create(data);  // data = parsed dst-data.json
 
 // Lookups
 engine.getCriterionId(criterion)      // \u2192 'A_1' (unique ID)
@@ -113,12 +120,15 @@ engine.reset()                        // Clear all checks
 engine.onChange(fn)                    // Register listener, returns unsubscribe fn
 ```
 
+> For full signatures and behavior see [docs/FUNCTION_REFERENCE.md](../docs/FUNCTION_REFERENCE.md).
+
 ## Alpine.js UI (index.html)
 The Alpine `app()` function creates a thin shell:
 - `engine` property holds the `DSTCore` instance
 - All logic methods delegate to `this.engine.*`
 - `_syncState()` copies `engine.checkedCriteria` to Alpine reactive state and refreshes `visibleGroups`
 - Theme toggle cycles auto \u2192 light \u2192 dark, persists in `localStorage`
+- `showSatisfiedCriteria` toggle: hides/shows already-satisfied criteria groups; persists in Alpine state
 - FOUC-prevention `<script>` in `<head>` applies dark class before paint
 
 ## Dark Mode
@@ -136,7 +146,6 @@ manifest.json           PWA manifest
 test.html               Test runner (browser)
 scripts/
   dst-core.js           Standalone logic engine (browser + Node.js)
-  dst-core.js           Standalone logic engine
   tests.js              54-test suite using DSTCore.create()
   build_tree.py         Pipeline step 1: build hierarchical criteria from USDA JSON
   apply_phase1.py       Pipeline step 2: separate navigation from outcomes
@@ -144,9 +153,10 @@ scripts/
   apply_phase3.py       Pipeline step 4: pre-linkify glossary terms \u2192 content_html
   populate_code_names.py Pipeline step 5: add taxa names by code
   validate_schema.py    Pipeline step 6: validate output
-  test_navigation.py    Python navigation logic tests
+  validate-logic-consistency.js  3-class logic consistency validator (npm run validate)
+  sync-version.js       Syncs version between package.json and manifest.json
 data/
-  keys_optimized.json   Generated data file (do not edit manually)
+  dst-data.json         Generated data file (do not edit manually)
 assets/
   *.json                USDA source data files
 docs/
@@ -160,15 +170,16 @@ docs/
 
 ## Development
 ```bash
+npm test                     # Run test suite (also works in browser via test.html)
+npm run validate             # Check logic consistency (3-class validator)
 python3 -m http.server 8000  # Serve locally, open http://localhost:8000
-node scripts/tests.js        # Run test suite (also works in browser via test.html)
 ```
 
 ## Service Worker
-- Cache version: `v3-2026-03` \u2014 bump when changing static files
+- Cache version: `v10-2026-03` \u2014 bump when changing static files
 - All paths resolved relative to SW location via `new URL('./', self.location)` — works at any deploy path
 - Static (cache-first): `index.html`, `manifest.json`, `style.css`, `scripts/dst-core.js`
-- Dynamic (network-first): `data/keys_optimized.json`
+- Dynamic (network-first): `data/dst-data.json`
 - Registered in index.html: `navigator.serviceWorker.register('sw.js')`
 
 ## Conventions

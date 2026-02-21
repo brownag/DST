@@ -171,7 +171,7 @@ cp /path/to/2014_KST_EN_featurelist.json assets/
 # 2. Run the preprocessing script
 python3 scripts/build_tree.py
 
-# 3. Result: data/keys_optimized.json is regenerated
+# 3. Result: data/dst-data.json is regenerated
 # 4. Reload the app in browser to use new data
 ```
 
@@ -195,7 +195,7 @@ To adapt this for other taxonomic systems:
 1. **Create equivalent JSON files** following the schema above
 2. **Adjust** `scripts/build_tree.py` if your field names differ
 3. **Test** with `python3 scripts/build_tree.py --validate`
-4. **Deploy** the generated `data/keys_optimized.json`
+4. **Deploy** the generated `data/dst-data.json`
 
 ---
 
@@ -206,7 +206,7 @@ When new USDA classifications are released:
 1. Obtain updated source files
 2. Copy to assets/
 3. Run `scripts/build_tree.py`
-4. Review `data/keys_optimized.json` for changes
+4. Review `data/dst-data.json` for changes
 5. Test in browser / offline mode
 6. Deploy when validated
 
@@ -216,8 +216,8 @@ When new USDA classifications are released:
 
 - **Schema questions**: See `scripts/build_tree.py` for processing logic
 - **Data questions**: Refer to USDA NRCS documentation
-- **Implementation help**: See `/home/andrew/workspace/DST/docs/ARCHITECTURE.md`
+- **Implementation help**: See [docs/ARCHITECTURE.md](../docs/ARCHITECTURE.md)
 
 ---
 
-**Note**: This directory is in `.gitignore` to prevent accidental inclusion of potentially large or licensed files. Keep source files locally and regenerate `data/keys_optimized.json` as needed.
+**Note**: This directory is in `.gitignore` to prevent accidental inclusion of potentially large or licensed files. Keep source files locally and regenerate `data/dst-data.json` as needed.

@@ -3,7 +3,7 @@
 ## Pipeline
 ```
 assets/*.json → build_tree.py → apply_phase1.py → apply_phase2.py → apply_phase3.py
-             → populate_code_names.py → validate_schema.py → data/keys_optimized.json
+             → populate_code_names.py → validate_schema.py → data/dst-data.json
 ```
 
 ## Input: USDA Source Files
@@ -36,14 +36,16 @@ Three JSON files in `assets/`:
 ]
 ```
 
-## Output: keys_optimized.json (v3.2.0)
+## Output: dst-data.json (v1.0.0)
 
 ### Top-level structure
 ```json
 {
-  "version": "3.2.0",
+  "version": "1.0.0",
   "generated": "2026-02-16",
-  "metadata": { "schema_version": "3.2.0", "statistics": { ... } },
+  "source": "USDA Keys to Soil Taxonomy (2022)",
+  "description": "Hierarchical soil taxonomy criteria and classification outcomes",
+  "metadata": { "schema_version": "1.0.0", "statistics": { ... } },
   "navigation": { "criteria": [ ... ] },
   "outcomes": { ... },
   "glossary": { ... },
@@ -52,7 +54,7 @@ Three JSON files in `assets/`:
 }
 ```
 
-### navigation.criteria (4,127 records)
+### navigation.criteria (5,706 records)
 ```json
 {
   "clause_id": "A",
@@ -61,7 +63,7 @@ Three JSON files in `assets/`:
   "parent_clause": "",
   "content": "A. Soils that have:",
   "content_html": "A. Soils that have:",
-  "logic": "FIRST",
+  "logic": "OR",
   "depth": 0
 }
 ```
@@ -74,16 +76,16 @@ Three JSON files in `assets/`:
 | `parent_clause` | Parent's `clause` value (empty string for roots) |
 | `content` | Raw criterion text |
 | `content_html` | Text with glossary terms pre-linkified as `<a>` tags |
-| `logic` | FIRST, OR, AND, or END |
+| `logic` | `AND` or `OR` (source values FIRST/END are normalized to OR at build time) |
 | `depth` | 0=Order, 1=Suborder, 2=Great Group, 3=Subgroup, -1=Outcome |
 
-### outcomes (3,080 records, keyed by code)
+### outcomes (3,073 records, keyed by code)
 ```json
 { "C": { "clause_id": "...", "crit": "C", "clause": 11, ... "depth": -1 } }
 ```
 Same fields as criteria, always `depth: -1`. Display-only, not used for navigation decisions.
 
-### glossary (136 terms, keyed by term_id)
+### glossary (124 terms, keyed by term_id)
 ```json
 { "aquic_conditions": { "term": "aquic conditions", "definition": "..." } }
 ```
@@ -93,7 +95,7 @@ Same fields as criteria, always `depth: -1`. Display-only, not used for navigati
 { "A": "Gelisols", "B": "Histosols", ... "L": "Entisols" }
 ```
 
-### code_names (~401 entries)
+### code_names (3,153 entries)
 Maps hierarchical codes to taxon names at all levels.
 ```json
 { "A": "Gelisols", "AA": "Histels", "AAA": "Folistels", ... }
@@ -106,8 +108,8 @@ The `logic` field on **children** determines how they contribute to parent satis
 | Value | Role | Rule |
 |-------|------|------|
 | AND | Mandatory | ALL children with AND must be satisfied |
-| FIRST | Alternative | At least ONE non-AND child must be satisfied |
-| OR | Alternative | Same as FIRST for satisfaction purposes |
-| END | Alternative | Terminal; same as FIRST for satisfaction |
+| OR | Alternative | At least ONE non-AND child must be satisfied |
 
 Parent is satisfied when: all mandatory (AND) children OK **and** at least one alternative (non-AND) child OK.
+
+**Note**: The USDA source uses `FIRST` and `END` logic values. The build pipeline normalizes these to `OR` before writing `dst-data.json`. Only `AND` and `OR` appear in the processed data.

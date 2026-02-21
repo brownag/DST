@@ -14,8 +14,8 @@ Works offline after first load. No build tools required.
 ## Features
 
 - Navigate USDA soil taxonomy: Order → Suborder → Great Group → Subgroup
-- 4,127 decision criteria with AND/OR satisfaction logic
-- 136 glossary terms with hover definitions
+- 5,706 decision criteria with AND/OR satisfaction logic
+- 124 glossary terms with hover definitions
 - Toggle to hide satisfied criteria groups for easier navigation
 - Works completely offline after initial load
 - No external dependencies beyond Alpine.js (CDN)
@@ -23,26 +23,32 @@ Works offline after first load. No build tools required.
 ## Project Structure
 
 ```
-index.html                 Single-file app (HTML + CSS + JS)
+index.html                 Alpine.js UI shell
+style.css                  CSS with light/dark custom properties
 sw.js                      Service Worker (offline support)
 manifest.json              PWA manifest
 test.html                  Browser test runner
 scripts/
-  app_helpers.js            State management helpers
+  dst-core.js              Standalone logic engine
   tests.js                  Test suite
   build_tree.py             Data pipeline (6 steps)
-  apply_phase1-3.py
+  apply_phase1.py
+  apply_phase2.py
+  apply_phase3.py
   populate_code_names.py
   validate_schema.py
+  validate-logic-consistency.js  3-class logic validator
+  sync-version.js          Version sync utility
 data/
-  dst-data.json       Generated taxonomy data (3.3 MB)
-docs/                       Developer documentation
+  dst-data.json            Generated taxonomy data (~3.5 MB)
+docs/                      Developer documentation
 ```
 
 ## Testing
 
 ```bash
-node scripts/tests.js                 # Run test suite via Node.js
+npm test                              # Run test suite via Node.js
+npm run validate                      # Check logic consistency
 python3 -m http.server 8000           # Or open test.html in browser
 ```
 

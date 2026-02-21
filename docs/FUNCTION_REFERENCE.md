@@ -5,7 +5,7 @@ All logic lives in `scripts/dst-core.js`. The Alpine.js UI in `index.html` deleg
 ## Factory
 
 ### `DSTCore.create(data) → engine`
-Creates a new engine instance from parsed `keys_optimized.json`. Builds all indices, sets up state, returns the engine object.
+Creates a new engine instance from parsed `dst-data.json`. Builds all indices, sets up state, returns the engine object.
 
 ```javascript
 // Browser
@@ -39,9 +39,10 @@ Returns `true` if criterion has no children in `clauseChildrenMap`. Cached in `_
 Recursive. Leaf: returns `checkedCriteria[id]`. Parent: returns `evaluateSiblingLogic(children, logic)`. Results cached in `_satCache`, invalidated on any state mutation.
 
 ### `engine.evaluateSiblingLogic(siblings, parentLogic) → boolean`
-Applies the parent's logic to its children:
-- `AND`: all siblings must satisfy (`every`)
-- `OR`: at least one sibling must satisfy (`some`)
+Applies the parent's logic to its children. Three cases:
+- **Uniform AND**: all siblings must satisfy (`every`)
+- **Uniform OR**: at least one sibling must satisfy (`some`)
+- **Mixed logic**: groups consecutive same-logic siblings into runs; evaluates each run by its own logic, then combines run results using the parent logic
 
 ### `engine.isGroupSatisfied(critCode) → boolean` *(cached)*
 Checks if the root criterion for a code group is satisfied. Results cached in `_groupSatCache`.

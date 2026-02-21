@@ -79,6 +79,12 @@ git checkout -b fix/bug-description
 
 #### Step 4: Test Your Changes
 
+**Node.js and Logic Validation:**
+```bash
+npm test                          # Run test suite via Node.js (54 tests)
+npm run validate                  # Check logic consistency (informational)
+```
+
 **Browser Testing:**
 ```bash
 python3 -m http.server 8000
@@ -93,13 +99,13 @@ Verify:
 - Offline mode works (DevTools Network tab → Offline)
 
 **Code Coverage:**
-- Run the test suite at http://localhost:8000/test.html
-- Ensure all tests pass (should see "45/45 tests passed")
+- All 54 tests pass in both Node.js and browser
 - For new functions, add corresponding unit tests to `scripts/tests.js`
 
 #### Step 5: Validate Implementation
 
 **Checklist before submitting PR:**
+- [ ] `npm test` passes (Node.js)
 - [ ] All tests pass (http://localhost:8000/test.html)
 - [ ] No npm dependencies added (maintain no-build philosophy)
 - [ ] Code follows existing style and patterns
@@ -128,6 +134,7 @@ Why this change is needed (related issue, use case, etc.)
 How to verify the changes work correctly
 
 ## Checklist
+- [ ] `npm test` passes
 - [ ] Tests pass (http://localhost:8000/test.html)
 - [ ] Documentation updated
 - [ ] No new npm dependencies
@@ -183,11 +190,11 @@ pylint scripts/your_script.py
   - Four letters: Subgroup (AAAA-LLLL)
   - Extended: Special cases (IFFZh, etc.)
 
-- JSON structure in data/keys_optimized.json:
+- JSON structure in data/dst-data.json:
   - `crit`: The code (A, AA, AAA, AAAA, etc.)
   - `clause`: Internal reference ID
   - `parent_clause`: Reference to parent's clause
-  - `logic`: AND, OR, FIRST, or END
+  - `logic`: `AND` or `OR` (source FIRST/END values are normalized to OR at build time)
   - `content`: Decision criterion text
   - `depth`: Hierarchical level
 
@@ -296,7 +303,7 @@ Service Worker caches on first visit and updates automatically. All functionalit
 - [**NAVIGATION_LOGIC.md**](docs/NAVIGATION_LOGIC.md) - Algorithm details
 - [**FUNCTION_REFERENCE.md**](docs/FUNCTION_REFERENCE.md) - API documentation
 - [**MAINTENANCE.md**](docs/MAINTENANCE.md) - Maintenance guide
-- [**TESTING_STRATEGY.md**](docs/TESTING_STRATEGY.md) - Testing approach
+- **Testing**: Run `npm test` (Node.js) or open `test.html` in browser. Run `npm run validate` for logic consistency.
 
 ## Community
 
