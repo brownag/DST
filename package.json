@@ -5,7 +5,7 @@
   "main": "scripts/dst-core.js",
   "types": "scripts/dst-core.d.ts",
   "license": "MIT",
-  "author": "",
+  "author": "Andrew G. Brown",
   "repository": {
     "type": "git",
     "url": ""

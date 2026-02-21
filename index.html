@@ -16,13 +16,21 @@
 </head>
 <body>
     <div class="container" x-data="app()" x-init="init()">
-        <aside class="sidebar">
-            <div class="sidebar-controls">
-                <button class="reset-btn" @click="reset()">Reset All</button>
-                <button class="theme-toggle" @click="cycleTheme()">
-                    <span x-text="themeIcon"></span> <span x-text="themeLabel"></span>
+        <aside class="sidebar" :class="{ collapsed: sidebarCollapsed }">
+            <div class="sidebar-title">Digital Keys to<br>Soil Taxonomy</div>
+            <div class="sidebar-controls" style="display: flex; gap: 6px; align-items: center; justify-content: center; margin-bottom: 15px;">
+                <button class="icon-btn" @click="currentTab = 'classify'" :title="currentTab === 'classify' ? 'Classify (active)' : 'Back to Classify'">⌂</button>
+                <button class="icon-btn" @click="reset()" title="Reset all selections">⟳</button>
+                <button class="icon-btn" @click="showSatisfiedCriteria = !showSatisfiedCriteria" :title="showSatisfiedCriteria ? 'Hide satisfied criteria' : 'Show satisfied criteria'">
+                    <span x-text="showSatisfiedCriteria ? '⊙' : '⊘'"></span>
                 </button>
-                <button class="theme-toggle" @click="showSatisfiedCriteria = !showSatisfiedCriteria" x-text="showSatisfiedCriteria ? 'Hide satisfied' : 'Show satisfied'"></button>
+                <button class="icon-btn" @click="cycleTheme()" :title="'Theme: ' + themeLabel">
+                    <span x-text="themeIcon"></span>
+                </button>
+                <button class="icon-btn" @click="currentTab = 'about'" :title="currentTab === 'about' ? 'About (active)' : 'About this app'">ℹ</button>
+                <button class="icon-btn" @click="sidebarCollapsed = !sidebarCollapsed" :title="sidebarCollapsed ? 'Expand sidebar' : 'Collapse sidebar'">
+                    <span x-text="sidebarCollapsed ? '▶' : '◀'"></span>
+                </button>
             </div>
 
             <!-- Current classification result -->
@@ -66,14 +74,6 @@
 
         <div class="main">
             <header>
-                <h1>Digital Keys to Soil Taxonomy</h1>
-                <div class="tab-bar">
-                    <button class="tab-btn" :class="{ active: currentTab === 'classify' }" @click="currentTab = 'classify'">Classify</button>
-                    <button class="tab-btn" :class="{ active: currentTab === 'about' }" @click="currentTab = 'about'">About</button>
-                </div>
-                <div x-show="currentTab === 'classify'" class="header-controls">
-                    <button class="toggle-btn" @click="showSatisfiedCriteria = !showSatisfiedCriteria" x-text="showSatisfiedCriteria ? 'Hide satisfied' : 'Show satisfied'"></button>
-                </div>
                 <p x-show="currentTab === 'classify' && !findCurrentLevel()">Check criteria to classify your soil</p>
                 <div class="breadcrumb" x-show="currentTab === 'classify' && findCurrentLevel()" x-text="getClassificationBreadcrumb()"></div>
             </header>
@@ -175,6 +175,14 @@
                         <li><strong>Source Data</strong>: <a href="https://github.com/ncss-tech/SoilKnowledgeBase" target="_blank" rel="noopener">SoilKnowledgeBase (GitHub)</a></li>
                     </ul>
                 </div>
+
+                <div class="about-section about-footer">
+                    <div style="text-align: center; font-size: 13px; color: var(--color-text-muted);">
+                        <p><strong>Digital Keys to Soil Taxonomy</strong><br>
+                        Version <span x-text="appVersion || '1.0.0'"></span></p>
+                        <p>Created by Andrew G. Brown</p>
+                    </div>
+                </div>
             </div>
 
             <!-- Classify Tab -->
@@ -225,9 +233,14 @@
 
                 <div class="loading" x-show="loading"><p>Loading criteria...</p></div>
 
-                <div class="info-panel" :class="{ hidden: !currentTerm }">
-                    <template x-if="currentTerm">
-                        <div>
+                <div class="info-panel" :class="{ hidden: !infoPanelOpen }">
+                    <div class="info-panel-controls">
+                        <input type="text" x-model="definitionSearch" class="search-input" placeholder="Filter definitions...">
+                        <button class="icon-btn" @click="infoPanelOpen = false" title="Close panel">✕</button>
+                        <button class="icon-btn" @click="viewedHistory = []; definitionSearch = ''" title="Clear all history">⊟</button>
+                    </div>
+                    <template x-if="currentTerm && infoPanelOpen">
+                        <div style="padding: 20px; overflow-y: auto; flex: 1;">
                             <div class="info-header">Term Definition</div>
                             <div class="current-term">
                                 <h3 x-text="currentTerm.term"></h3>
@@ -235,7 +248,7 @@
                             </div>
                             <div class="info-header">Recently Viewed</div>
                             <div class="viewed-history">
-                                <template x-for="item in viewedHistory" :key="item.id">
+                                <template x-for="item in getFilteredHistory()" :key="item.id">
                                     <div class="history-item" @click="selectViewed(item)"><strong x-text="item.term"></strong></div>
                                 </template>
                             </div>
@@ -259,6 +272,7 @@
         function app() {
             return {
                 // --- State ---
+                appVersion: '1.0.0',
                 engine: null,
                 loading: true,
                 error: null,
@@ -269,6 +283,9 @@
                 currentTab: 'classify',
                 theme: localStorage.getItem('dst-theme') || 'auto',
                 showSatisfiedCriteria: true,
+                sidebarCollapsed: false,
+                infoPanelOpen: false,
+                definitionSearch: '',
 
                 // --- Theme ---
 
@@ -349,11 +366,21 @@
                     this.visibleGroups = this.engine.getVisibleGroups();
                 },
 
+                getFilteredHistory() {
+                    if (!this.definitionSearch) return this.viewedHistory;
+                    var search = this.definitionSearch.toLowerCase();
+                    return this.viewedHistory.filter(function(item) {
+                        return item.term.toLowerCase().includes(search);
+                    });
+                },
+
                 // --- Glossary ---
 
                 handleTermClick(event) {
                     var span = event.target.closest('.glossary-term');
                     if (span) {
+                        event.preventDefault();
+                        event.stopPropagation();
                         var termId = span.getAttribute('data-id');
                         this.selectTerm(termId);
                     }
@@ -372,6 +399,7 @@
                     var term = this.engine.glossary[termId];
                     if (term) {
                         this.currentTerm = term;
+                        this.infoPanelOpen = true;
                         if (!this.viewedHistory.find(function(h) { return h.id === termId; })) {
                             this.viewedHistory.unshift(term);
                             if (this.viewedHistory.length > 10) this.viewedHistory.pop();
@@ -380,6 +408,7 @@
                 },
                 selectViewed(item) {
                     this.currentTerm = item;
+                    this.infoPanelOpen = true;
                 }
             };
         }
