@@ -5,11 +5,18 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Digital Keys to Soil Taxonomy</title>
     <script>
-        // FOUC prevention: apply dark theme before first paint
+        // FOUC prevention: apply correct theme before first paint
         (function() {
+            var ALL = ['dark', 'green', 'sepia', 'high-contrast'];
             var t = localStorage.getItem('dst-theme');
-            var d = t === 'dark' || (!t && window.matchMedia('(prefers-color-scheme: dark)').matches);
-            if (d) document.documentElement.classList.add('dark');
+            ALL.forEach(function(c) { document.documentElement.classList.remove(c); });
+            if (t === 'dark' || t === 'green' || t === 'sepia' || t === 'high-contrast') {
+                document.documentElement.classList.add(t);
+            } else if (!t || t === 'auto') {
+                if (window.matchMedia('(prefers-color-scheme: dark)').matches) {
+                    document.documentElement.classList.add('dark');
+                }
+            }
         })();
     </script>
     <link rel="stylesheet" href="style.css">
@@ -290,22 +297,36 @@
                 // --- Theme ---
 
                 get themeIcon() {
-                    return { auto: '◐', light: '☀', dark: '☾' }[this.theme] || '◐';
+                    return {
+                        auto: '◐', light: '☀', dark: '☾',
+                        green: '☘', sepia: '📄︎', 'high-contrast': '◈'
+                    }[this.theme] || '◐';
                 },
                 get themeLabel() {
-                    return { auto: 'Auto', light: 'Light', dark: 'Dark' }[this.theme] || 'Auto';
+                    return {
+                        auto: 'Auto', light: 'Light', dark: 'Dark',
+                        green: 'Green', sepia: 'Sepia', 'high-contrast': 'High Contrast'
+                    }[this.theme] || 'Auto';
                 },
                 cycleTheme() {
-                    var order = ['auto', 'light', 'dark'];
-                    this.theme = order[(order.indexOf(this.theme) + 1) % 3];
+                    var order = ['auto', 'light', 'dark', 'green', 'sepia', 'high-contrast'];
+                    var idx = order.indexOf(this.theme);
+                    if (idx === -1) idx = 0;
+                    this.theme = order[(idx + 1) % order.length];
                     if (this.theme === 'auto') localStorage.removeItem('dst-theme');
                     else localStorage.setItem('dst-theme', this.theme);
                     this.applyTheme();
                 },
                 applyTheme() {
-                    var dark = this.theme === 'dark' ||
-                        (this.theme === 'auto' && window.matchMedia('(prefers-color-scheme: dark)').matches);
-                    document.documentElement.classList.toggle('dark', dark);
+                    var el = document.documentElement;
+                    ['dark', 'green', 'sepia', 'high-contrast'].forEach(function(c) { el.classList.remove(c); });
+                    if (this.theme === 'dark') {
+                        el.classList.add('dark');
+                    } else if (this.theme === 'auto') {
+                        if (window.matchMedia('(prefers-color-scheme: dark)').matches) el.classList.add('dark');
+                    } else if (this.theme === 'green' || this.theme === 'sepia' || this.theme === 'high-contrast') {
+                        el.classList.add(this.theme);
+                    }
                 },
 
                 // --- Engine Delegation ---

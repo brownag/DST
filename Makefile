@@ -46,7 +46,7 @@ serve:
 	@echo "Starting local development server..."
 	@echo "Open http://localhost:8000 in your browser"
 	@echo "Serving files from: $(PWD)"
-	@python3 -m http.server 8000 --directory . 2>/dev/null || python -m SimpleHTTPServer 8000
+	@python3 -m http.server 8000 --directory .
 
 # Development mode: server + auto-testing
 dev:
