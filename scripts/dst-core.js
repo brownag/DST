@@ -82,10 +82,45 @@ var DSTCore = (function () {
 
         engine.evaluateSiblingLogic = function (siblings, parentLogic) {
             var self = this;
-            if (parentLogic === 'AND') {
-                return siblings.every(function (s) { return self.isClauseSatisfied(s); });
+
+            // Fast path: uniform logic — use existing behavior unchanged
+            var firstLogic = siblings.length > 0 ? siblings[0].logic : parentLogic;
+            var uniform = siblings.every(function (s) { return s.logic === firstLogic; });
+            if (uniform) {
+                if (parentLogic === 'AND') {
+                    return siblings.every(function (s) { return self.isClauseSatisfied(s); });
+                }
+                return siblings.some(function (s) { return self.isClauseSatisfied(s); });
             }
-            return siblings.some(function (s) { return self.isClauseSatisfied(s); });
+
+            // Mixed logic: group consecutive same-logic siblings into runs
+            var runs = [];
+            var currentLogic = siblings[0].logic;
+            var currentItems = [siblings[0]];
+            for (var i = 1; i < siblings.length; i++) {
+                if (siblings[i].logic === currentLogic) {
+                    currentItems.push(siblings[i]);
+                } else {
+                    runs.push({ logic: currentLogic, items: currentItems });
+                    currentItems = [siblings[i]];
+                    currentLogic = siblings[i].logic;
+                }
+            }
+            runs.push({ logic: currentLogic, items: currentItems });
+
+            // Evaluate each run by its own logic
+            var runResults = runs.map(function (run) {
+                if (run.logic === 'AND') {
+                    return run.items.every(function (s) { return self.isClauseSatisfied(s); });
+                }
+                return run.items.some(function (s) { return self.isClauseSatisfied(s); });
+            });
+
+            // Combine runs with parent logic
+            if (parentLogic === 'AND') {
+                return runResults.every(function (r) { return r; });
+            }
+            return runResults.some(function (r) { return r; });
         };
 
         engine.isGroupSatisfied = function (critCode) {

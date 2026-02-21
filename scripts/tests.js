@@ -856,6 +856,550 @@ describe('Classification Helpers', () => {
   });
 });
 
+// INTEGRATION TESTS WITH REAL DATA
+
+describe('Real Data: Aquods (CA) OR Logic Fix', () => {
+
+  it('Should load keys_optimized.json successfully', () => {
+    let fs;
+    try {
+      fs = require('fs');
+    } catch (e) {
+      // Skip in browser
+      return;
+    }
+
+    if (!fs) return;
+
+    const data = JSON.parse(fs.readFileSync('./data/keys_optimized.json', 'utf8'));
+    assertDefined(data.navigation, 'Should have navigation section');
+    assertDefined(data.navigation.criteria, 'Should have criteria array');
+    assertTrue(data.navigation.criteria.length > 0, 'Should have at least one criterion');
+  });
+
+  it('Aquods (CA) root criterion should have OR logic', () => {
+    let fs;
+    try {
+      fs = require('fs');
+    } catch (e) {
+      return;
+    }
+
+    if (!fs) return;
+
+    const data = JSON.parse(fs.readFileSync('./data/keys_optimized.json', 'utf8'));
+    const ca = data.navigation.criteria.find(c => c.crit === 'CA' && c.clause === 1);
+    assertDefined(ca, 'CA criterion should exist');
+    assertEqual(ca.logic, 'OR', 'CA (Aquods) root should have OR logic, not AND');
+  });
+
+  it('Aquods (CA) should have exactly 2 direct children (clauses 2 and 3)', () => {
+    let fs;
+    try {
+      fs = require('fs');
+    } catch (e) {
+      return;
+    }
+
+    if (!fs) return;
+
+    const data = JSON.parse(fs.readFileSync('./data/keys_optimized.json', 'utf8'));
+    const caChildren = data.navigation.criteria.filter(c => c.crit === 'CA' && c.parent_clause === 1);
+    assertEqual(caChildren.length, 2, 'CA should have exactly 2 children (CA.1 and CA.2)');
+
+    const clauses = caChildren.map(c => c.clause).sort();
+    assertArrayEquals(clauses, [2, 3], 'CA children should have clauses 2 and 3');
+  });
+
+  it('Aquods CA.1 and CA.2 should both have OR logic', () => {
+    let fs;
+    try {
+      fs = require('fs');
+    } catch (e) {
+      return;
+    }
+
+    if (!fs) return;
+
+    const data = JSON.parse(fs.readFileSync('./data/keys_optimized.json', 'utf8'));
+    const ca1 = data.navigation.criteria.find(c => c.crit === 'CA' && c.clause === 2);
+    const ca2 = data.navigation.criteria.find(c => c.crit === 'CA' && c.clause === 3);
+
+    assertDefined(ca1, 'CA.1 should exist');
+    assertDefined(ca2, 'CA.2 should exist');
+    assertEqual(ca1.logic, 'OR', 'CA.1 should have OR logic');
+    assertEqual(ca2.logic, 'OR', 'CA.2 should have OR logic');
+  });
+
+  it('Aquods content should describe OR semantics with "one or both"', () => {
+    let fs;
+    try {
+      fs = require('fs');
+    } catch (e) {
+      return;
+    }
+
+    if (!fs) return;
+
+    const data = JSON.parse(fs.readFileSync('./data/keys_optimized.json', 'utf8'));
+    const ca = data.navigation.criteria.find(c => c.crit === 'CA' && c.clause === 1);
+    assertDefined(ca, 'CA should exist');
+    assertTrue(
+      ca.content.includes('one or both'),
+      'CA content should indicate OR semantics with "one or both"'
+    );
+  });
+});
+
+describe('Real Data Integration Tests', () => {
+
+  it('Should instantiate engine from real data successfully', () => {
+    let fs;
+    try {
+      fs = require('fs');
+    } catch (e) {
+      return;
+    }
+
+    if (!fs) return;
+
+    const data = JSON.parse(fs.readFileSync('./data/keys_optimized.json', 'utf8'));
+    const engine = DSTCore.create(data);
+    assertDefined(engine, 'Engine should be created');
+    assertTrue(engine.allCriteria.length > 0, 'Engine should have criteria');
+    assertDefined(engine.groupRoots['CA'], 'CA should be a group root');
+  });
+
+  it('Aquods CA criterion should satisfy with only first child checked', () => {
+    let fs;
+    try {
+      fs = require('fs');
+    } catch (e) {
+      return;
+    }
+
+    if (!fs) return;
+
+    const data = JSON.parse(fs.readFileSync('./data/keys_optimized.json', 'utf8'));
+    const engine = DSTCore.create(data);
+
+    const ca = engine.getCriterionByCode('CA');
+    assertDefined(ca, 'CA should exist in engine');
+
+    // Get CA's children (clauses 2 and 3)
+    const caChildren = engine.getClauseChildren(ca);
+    assertTrue(caChildren.length > 0, 'CA should have children clauses');
+
+    // Check only the first child
+    const firstChild = caChildren[0];
+    engine.check(engine.getCriterionId(firstChild));
+
+    // CA should now be satisfied with OR logic (only need one child)
+    assertTrue(
+      engine.isClauseSatisfied(ca),
+      'CA with OR logic should be satisfied when only first child is checked'
+    );
+  });
+
+  it('Aquods CA criterion should satisfy with only second child checked', () => {
+    let fs;
+    try {
+      fs = require('fs');
+    } catch (e) {
+      return;
+    }
+
+    if (!fs) return;
+
+    const data = JSON.parse(fs.readFileSync('./data/keys_optimized.json', 'utf8'));
+    const engine = DSTCore.create(data);
+
+    const ca = engine.getCriterionByCode('CA');
+    const caChildren = engine.getClauseChildren(ca);
+    assertTrue(caChildren.length > 1, 'CA should have at least 2 children');
+
+    // Check only the second child
+    const secondChild = caChildren[1];
+    engine.check(engine.getCriterionId(secondChild));
+
+    // CA should be satisfied with OR logic (only need one child)
+    assertTrue(
+      engine.isClauseSatisfied(ca),
+      'CA with OR logic should be satisfied when only second child is checked'
+    );
+  });
+
+  it('Aquods should NOT require both children for satisfaction', () => {
+    let fs;
+    try {
+      fs = require('fs');
+    } catch (e) {
+      return;
+    }
+
+    if (!fs) return;
+
+    const data = JSON.parse(fs.readFileSync('./data/keys_optimized.json', 'utf8'));
+    const engine = DSTCore.create(data);
+
+    const ca = engine.getCriterionByCode('CA');
+    const caChildren = engine.getClauseChildren(ca);
+
+    // With AND logic (the bug), you'd need both children
+    // With correct OR logic, only one should be needed
+    assertTrue(
+      caChildren.length >= 2,
+      'CA should have at least 2 children for this test'
+    );
+
+    // Check first child only
+    engine.check(engine.getCriterionId(caChildren[0]));
+    assertTrue(
+      engine.isClauseSatisfied(ca),
+      'OR logic: first child alone should satisfy CA'
+    );
+
+    // Uncheck first, check second
+    engine.uncheck(engine.getCriterionId(caChildren[0]));
+    engine.check(engine.getCriterionId(caChildren[1]));
+    assertTrue(
+      engine.isClauseSatisfied(ca),
+      'OR logic: second child alone should satisfy CA'
+    );
+  });
+
+  it('Should handle Spodosols (C) suborder navigation with fixed Aquods', () => {
+    let fs;
+    try {
+      fs = require('fs');
+    } catch (e) {
+      return;
+    }
+
+    if (!fs) return;
+
+    const data = JSON.parse(fs.readFileSync('./data/keys_optimized.json', 'utf8'));
+    const engine = DSTCore.create(data);
+
+    // C is Spodosols (Order)
+    const c = engine.getCriterionByCode('C');
+    assertDefined(c, 'C (Spodosols) should exist');
+
+    // CA is Aquods (Suborder of Spodosols)
+    const ca = engine.getCriterionByCode('CA');
+    assertDefined(ca, 'CA (Aquods) should exist');
+
+    // Get the direct children of CA in the clause hierarchy
+    const caChildren = engine.getClauseChildren(ca);
+    assertTrue(caChildren.length > 0, 'CA should have clause children');
+
+    // Checking only one CA child should make Aquods satisfiable
+    engine.check(engine.getCriterionId(caChildren[0]));
+    assertTrue(
+      engine.isClauseSatisfied(ca),
+      'Aquods (CA) should be satisfied with OR logic'
+    );
+  });
+});
+
+describe('Data Structure: Aridisols Mixed Logic (Semantic)', () => {
+
+  it('Aridisols G.1 has semantically correct mixed AND/OR logic', () => {
+    let fs;
+    try {
+      fs = require('fs');
+    } catch (e) {
+      return;
+    }
+
+    if (!fs) return;
+
+    const data = JSON.parse(fs.readFileSync('./data/keys_optimized.json', 'utf8'));
+    const children = data.navigation.criteria.filter(c =>
+      c.crit === 'G' && c.parent_clause === 2
+    );
+
+    assertTrue(children.length === 4, 'G.1 should have 4 children (a, b, c, d)');
+
+    // Semantic structure:
+    // 1. Have: a AND b AND (c OR d)
+    const logicsByClause = {};
+    children.forEach(c => {
+      logicsByClause[c.clause] = c.logic;
+    });
+
+    // Clauses 3-4 (a, b): AND - both required
+    assertEqual(logicsByClause[3], 'AND', 'Clause 3 (a): Required with AND');
+    assertEqual(logicsByClause[4], 'AND', 'Clause 4 (b): Required with AND');
+
+    // Clauses 5-6 (c, d): OR - either/or alternative
+    assertEqual(logicsByClause[5], 'OR', 'Clause 5 (c): Alternative with OR');
+    assertEqual(logicsByClause[6], 'OR', 'Clause 6 (d): Alternative with OR');
+  });
+
+  it('Aridisols G.1 mixed logic reflects correct taxonomy semantics', () => {
+    let fs;
+    try {
+      fs = require('fs');
+    } catch (e) {
+      return;
+    }
+
+    if (!fs) return;
+
+    const data = JSON.parse(fs.readFileSync('./data/keys_optimized.json', 'utf8'));
+
+    // Verify semantic structure in content
+    const criteria = data.navigation.criteria.filter(c => c.crit === 'G' && c.parent_clause === 2);
+
+    // a and b should have "and" at the end
+    assertTrue(
+      criteria.some(c => c.clause === 3 && c.content.includes('and')),
+      'Clause 3 (a) should indicate AND relationship with "and"'
+    );
+
+    assertTrue(
+      criteria.some(c => c.clause === 4 && c.content.includes('and')),
+      'Clause 4 (b) should indicate AND relationship with "and"'
+    );
+
+    // c and d should have "or"
+    assertTrue(
+      criteria.some(c => c.clause === 5 && c.content.includes('or')),
+      'Clause 5 (c) should indicate OR relationship with "or"'
+    );
+
+    assertTrue(
+      criteria.some(c => c.clause === 6 && c.content.includes('or')),
+      'Clause 6 (d) should indicate OR relationship with "or"'
+    );
+  });
+});
+
+describe('Regression Tests: Other Suborders Still Work', () => {
+
+  it('Should handle AND logic correctly (other taxa)', () => {
+    const criteria = [
+      { crit: 'TEST', clause: 1, parent_clause: '', logic: 'AND', depth: 0, content: 'Test AND', key: 'Test' },
+      { crit: 'TEST', clause: 2, parent_clause: 1, logic: 'END', depth: 1, content: 'Child 1', key: 'Test' },
+      { crit: 'TEST', clause: 3, parent_clause: 1, logic: 'END', depth: 1, content: 'Child 2', key: 'Test' }
+    ];
+    const state = setupTestState(criteria);
+    const test = state.getCriterionByCode('TEST');
+    const children = state.getClauseChildren(test);
+
+    // AND logic: only one child checked should not satisfy
+    state.check(state.getCriterionId(children[0]));
+    assertFalse(
+      state.isClauseSatisfied(test),
+      'AND logic: only one child checked should not satisfy'
+    );
+
+    // Both children checked should satisfy
+    state.check(state.getCriterionId(children[1]));
+    assertTrue(
+      state.isClauseSatisfied(test),
+      'AND logic: both children checked should satisfy'
+    );
+  });
+
+  it('Should preserve OR logic for actual OR nodes', () => {
+    const criteria = [
+      { crit: 'TEST', clause: 1, parent_clause: '', logic: 'OR', depth: 0, content: 'Test OR', key: 'Test' },
+      { crit: 'TEST', clause: 2, parent_clause: 1, logic: 'END', depth: 1, content: 'Child 1', key: 'Test' },
+      { crit: 'TEST', clause: 3, parent_clause: 1, logic: 'END', depth: 1, content: 'Child 2', key: 'Test' }
+    ];
+    const state = setupTestState(criteria);
+    const test = state.getCriterionByCode('TEST');
+    const children = state.getClauseChildren(test);
+
+    // OR logic: one child checked should satisfy
+    state.check(state.getCriterionId(children[0]));
+    assertTrue(
+      state.isClauseSatisfied(test),
+      'OR logic: one child checked should satisfy'
+    );
+  });
+});
+
+describe('Mixed Logic Run-Grouping Evaluation', () => {
+
+  it('Aridisols G.1: checking a+b only does NOT satisfy G.1', () => {
+    // Create synthetic test data since real data access in test runner can be unreliable
+    const criteria = [
+      { crit: 'G', clause: 1, parent_clause: '', logic: 'OR', depth: 0, content: 'G root', key: 'G' },
+      { crit: 'G', clause: 2, parent_clause: 1, logic: 'AND', depth: 1, content: '1. Have:', key: 'G' },
+      { crit: 'G', clause: 3, parent_clause: 2, logic: 'AND', depth: 2, content: 'a. moisture', key: 'G' },
+      { crit: 'G', clause: 4, parent_clause: 2, logic: 'AND', depth: 2, content: 'b. epipedon', key: 'G' },
+      { crit: 'G', clause: 5, parent_clause: 2, logic: 'OR', depth: 2, content: 'c. one or more', key: 'G' },
+      { crit: 'G', clause: 6, parent_clause: 2, logic: 'OR', depth: 2, content: 'd. argillic', key: 'G' }
+    ];
+
+    const state = setupTestState(criteria);
+    const g1_2 = criteria.find(c => c.crit === 'G' && c.clause === 2);
+
+    // Check only a (clause 3) and b (clause 4)
+    state.check('G_3');
+    state.check('G_4');
+
+    // G.1 should NOT be satisfied yet (c or d is needed)
+    assertFalse(
+      state.isClauseSatisfied(g1_2),
+      'G.1 should NOT be satisfied with only a and b (needs c OR d)'
+    );
+  });
+
+  it('Aridisols G.1: checking a+b+c satisfies G.1', () => {
+    let fs;
+    try {
+      fs = require('fs');
+    } catch (e) {
+      return;
+    }
+
+    if (!fs) return;
+
+    const data = JSON.parse(fs.readFileSync('./data/keys_optimized.json', 'utf8'));
+    const engine = DSTCore.create(data);
+
+    const g1_2 = data.navigation.criteria.find(c => c.crit === 'G' && c.clause === 2);
+
+    // Check a, b, and c
+    engine.check('G_3');
+    engine.check('G_4');
+    engine.check('G_5');
+
+    assertTrue(
+      engine.isClauseSatisfied(g1_2),
+      'G.1 should be satisfied with a+b+c (c is one OR alternative)'
+    );
+  });
+
+  it('Aridisols G.1: checking a+b+d satisfies G.1', () => {
+    let fs;
+    try {
+      fs = require('fs');
+    } catch (e) {
+      return;
+    }
+
+    if (!fs) return;
+
+    const data = JSON.parse(fs.readFileSync('./data/keys_optimized.json', 'utf8'));
+    const engine = DSTCore.create(data);
+
+    const g1_2 = data.navigation.criteria.find(c => c.crit === 'G' && c.clause === 2);
+
+    // Check a, b, and d (not c)
+    engine.check('G_3');
+    engine.check('G_4');
+    engine.check('G_6');
+
+    assertTrue(
+      engine.isClauseSatisfied(g1_2),
+      'G.1 should be satisfied with a+b+d (d is the other OR alternative)'
+    );
+  });
+
+  it('Aridisols G.1: run-grouping formula (a AND b) AND (c OR d) works', () => {
+    // Synthetic test with [AND, AND, OR, OR] children under parent AND
+    const criteria = [
+      { crit: 'MIX', clause: 1, parent_clause: '', logic: 'AND', depth: 0, content: 'Parent AND', key: 'MIX' },
+      { crit: 'MIX', clause: 2, parent_clause: 1, logic: 'AND', depth: 1, content: 'a required', key: 'MIX' },
+      { crit: 'MIX', clause: 3, parent_clause: 1, logic: 'AND', depth: 1, content: 'b required', key: 'MIX' },
+      { crit: 'MIX', clause: 4, parent_clause: 1, logic: 'OR', depth: 1, content: 'c alternative', key: 'MIX' },
+      { crit: 'MIX', clause: 5, parent_clause: 1, logic: 'OR', depth: 1, content: 'd alternative', key: 'MIX' }
+    ];
+
+    const state = setupTestState(criteria);
+    const parent = state.getCriterionByCode('MIX');
+
+    // Test: a+b+c should satisfy (a AND b required, then c OR d satisfied by c)
+    state.check('MIX_2');
+    state.check('MIX_3');
+    state.check('MIX_4');
+    assertTrue(
+      state.isClauseSatisfied(parent),
+      'Run-grouping: (a AND b) AND (c OR d) satisfied by a+b+c'
+    );
+
+    state.reset();
+
+    // Test: a+b+d should satisfy (same, but d instead of c)
+    state.check('MIX_2');
+    state.check('MIX_3');
+    state.check('MIX_5');
+    assertTrue(
+      state.isClauseSatisfied(parent),
+      'Run-grouping: (a AND b) AND (c OR d) satisfied by a+b+d'
+    );
+
+    state.reset();
+
+    // Test: a+b alone should NOT satisfy (OR-run needs at least one)
+    state.check('MIX_2');
+    state.check('MIX_3');
+    assertFalse(
+      state.isClauseSatisfied(parent),
+      'Run-grouping: (a AND b) AND (c OR d) fails without c or d'
+    );
+
+    state.reset();
+
+    // Test: a+c should NOT satisfy (b is required by AND-run)
+    state.check('MIX_2');
+    state.check('MIX_4');
+    assertFalse(
+      state.isClauseSatisfied(parent),
+      'Run-grouping: (a AND b) AND (c OR d) fails without b'
+    );
+  });
+
+  it('Uniform-logic siblings unchanged: parent AND with all-AND children', () => {
+    const criteria = [
+      { crit: 'UNIF', clause: 1, parent_clause: '', logic: 'AND', depth: 0, content: 'Parent AND', key: 'UNIF' },
+      { crit: 'UNIF', clause: 2, parent_clause: 1, logic: 'AND', depth: 1, content: 'a', key: 'UNIF' },
+      { crit: 'UNIF', clause: 3, parent_clause: 1, logic: 'AND', depth: 1, content: 'b', key: 'UNIF' },
+      { crit: 'UNIF', clause: 4, parent_clause: 1, logic: 'AND', depth: 1, content: 'c', key: 'UNIF' }
+    ];
+
+    const state = setupTestState(criteria);
+    const parent = state.getCriterionByCode('UNIF');
+
+    // All must be satisfied
+    state.check('UNIF_2');
+    state.check('UNIF_3');
+    assertFalse(state.isClauseSatisfied(parent), 'Uniform AND: 2/3 not enough');
+
+    state.check('UNIF_4');
+    assertTrue(state.isClauseSatisfied(parent), 'Uniform AND: all 3 needed');
+  });
+
+  it('Uniform-logic siblings unchanged: parent OR with all-OR children', () => {
+    const criteria = [
+      { crit: 'UNIF2', clause: 1, parent_clause: '', logic: 'OR', depth: 0, content: 'Parent OR', key: 'UNIF2' },
+      { crit: 'UNIF2', clause: 2, parent_clause: 1, logic: 'OR', depth: 1, content: 'a', key: 'UNIF2' },
+      { crit: 'UNIF2', clause: 3, parent_clause: 1, logic: 'OR', depth: 1, content: 'b', key: 'UNIF2' },
+      { crit: 'UNIF2', clause: 4, parent_clause: 1, logic: 'OR', depth: 1, content: 'c', key: 'UNIF2' }
+    ];
+
+    const state = setupTestState(criteria);
+    const parent = state.getCriterionByCode('UNIF2');
+
+    // Any one satisfies
+    state.check('UNIF2_2');
+    assertTrue(state.isClauseSatisfied(parent), 'Uniform OR: first one enough');
+
+    state.reset();
+    state.check('UNIF2_3');
+    assertTrue(state.isClauseSatisfied(parent), 'Uniform OR: second one enough');
+
+    state.reset();
+    assertFalse(state.isClauseSatisfied(parent), 'Uniform OR: need at least one');
+  });
+
+});
+
 // TEST EXECUTION
 
 function printSummary() {
