@@ -223,7 +223,7 @@ function setupTestState(criteria) {
 
 // UNIT TESTS: SATISFACTION LOGIC
 
-describe('Satisfaction Logic: isClauseSatisfied()', () => {
+describe('Clause Satisfaction Logic', () => {
 
   it('AND logic: all children satisfied -> parent satisfied', () => {
     const state = setupTestState();
@@ -419,9 +419,9 @@ describe('Hierarchy Lookups', () => {
 
 // INTEGRATION TESTS: NAVIGATION PATHS
 
-describe('Navigation Paths: Full Hierarchies', () => {
+describe('Navigation Hierarchy', () => {
 
-  it('Should navigate full hierarchy: checking leaves satisfies parents', () => {
+  it('Leaf checks cascade satisfaction up hierarchy', () => {
     const state = setupTestState();
 
     state.check(state.getCriterionId(state.getCriterionByCode('AAA')));
@@ -431,7 +431,7 @@ describe('Navigation Paths: Full Hierarchies', () => {
     assertTrue(state.isClauseSatisfied(state.getCriterionByCode('A')), 'A should be satisfied when child AA is satisfied');
   });
 
-  it('Should require all AND children for satisfaction', () => {
+  it('AND parent requires all children satisfied', () => {
     const state = setupTestState();
 
     state.check(state.getCriterionId(state.getCriterionByCode('AAA')));
@@ -443,7 +443,7 @@ describe('Navigation Paths: Full Hierarchies', () => {
     assertTrue(state.isClauseSatisfied(state.getCriterionByCode('AA')), 'AA satisfied when both AND children checked');
   });
 
-  it('Should handle switching between suborders', () => {
+  it('Switching between codes clears previous state', () => {
     const state = setupTestState();
 
     state.check(state.getCriterionId(state.getCriterionByCode('AAA')));
@@ -458,7 +458,7 @@ describe('Navigation Paths: Full Hierarchies', () => {
     assertTrue(state.isClauseSatisfied(state.getCriterionByCode('AB')), 'AB should be satisfied');
   });
 
-  it('Should handle reset to initial state', () => {
+  it('Reset clears all checked criteria', () => {
     const state = setupTestState();
 
     state.check(state.getCriterionId(state.getCriterionByCode('AAA')));
@@ -472,9 +472,9 @@ describe('Navigation Paths: Full Hierarchies', () => {
 
 // EDGE CASE TESTS
 
-describe('Edge Cases & Boundary Conditions', () => {
+describe('Edge Cases', () => {
 
-  it('Should handle single root node', () => {
+  it('Single root node satisfies correctly', () => {
     const state = setupTestState([
       { crit: 'X', clause: 1, parent_clause: '', logic: 'END', depth: 0, content: 'Single root', key: 'Test' }
     ]);
@@ -483,7 +483,7 @@ describe('Edge Cases & Boundary Conditions', () => {
     assertTrue(state.isClauseSatisfied(state.getCriterionByCode('X')), 'Single root should be satisfiable');
   });
 
-  it('Should handle node with many children', () => {
+  it('Node with many children evaluates correctly', () => {
     const letters = 'ABCDEFGHIJ';
     const children = [];
     for (let i = 0; i < 10; i++) {
@@ -515,7 +515,7 @@ describe('Edge Cases & Boundary Conditions', () => {
     assertTrue(state.isClauseSatisfied(parent), 'Parent with many OR children should be satisfied when one is checked');
   });
 
-  it('Should handle deep nesting (4+ levels)', () => {
+  it('Deep nesting (4+ levels) evaluates correctly', () => {
     const criteria = [
       { crit: 'D', clause: 1, parent_clause: '', logic: 'FIRST', depth: 0, content: 'Level 1', key: 'Test' },
       { crit: 'DA', clause: 1, parent_clause: '', logic: 'OR', depth: 1, content: 'Level 2', key: 'Test' },
@@ -531,7 +531,7 @@ describe('Edge Cases & Boundary Conditions', () => {
     assertTrue(state.isClauseSatisfied(state.getCriterionByCode('D')), 'Deeply nested hierarchy should be navigable');
   });
 
-  it('Should handle OR logic requiring exactly one check', () => {
+  it('OR parent satisfied by single child', () => {
     const state = setupTestState();
     const parent = state.getCriterionByCode('AB'); // OR logic
     const children = state.getDirectChildren('AB');
@@ -545,7 +545,7 @@ describe('Edge Cases & Boundary Conditions', () => {
     assertTrue(state.isClauseSatisfied(parent), 'OR parent should be satisfied with different child');
   });
 
-  it('Should handle AND logic requiring all checks', () => {
+  it('AND parent requires all children checked', () => {
     const state = setupTestState();
     const parent = state.getCriterionByCode('AA'); // AND logic
     const children = state.getDirectChildren('AA');
@@ -561,7 +561,7 @@ describe('Edge Cases & Boundary Conditions', () => {
     assertFalse(state.isClauseSatisfied(parent), 'AND parent should not be satisfied after unchecking');
   });
 
-  it('Should handle empty checkedCriteria map', () => {
+  it('Empty checkedCriteria map handled', () => {
     const state = setupTestState();
 
     assertFalse(state.isClauseSatisfied(state.getCriterionByCode('A')), 'Parent should be unsatisfied with empty checks');
@@ -573,7 +573,7 @@ describe('Edge Cases & Boundary Conditions', () => {
 
 describe('Data Integrity Validation', () => {
 
-  it('Should have unique getCriterionId for all test criteria', () => {
+  it('getCriterionId unique across all criteria', () => {
     const state = setupTestState();
     const ids = new Set();
     const duplicates = [];
@@ -586,7 +586,7 @@ describe('Data Integrity Validation', () => {
     assertEqual(ids.size, state.allCriteria.length, 'All IDs should be unique');
   });
 
-  it('Should have valid parent-child relationships', () => {
+  it('All parent-child relationships valid', () => {
     const state = setupTestState();
     state.allCriteria.forEach(c => {
       if (c.crit.length > 1) {
@@ -597,7 +597,7 @@ describe('Data Integrity Validation', () => {
     });
   });
 
-  it('Should have valid logic types', () => {
+  it('All logic types valid', () => {
     const state = setupTestState();
     const validLogics = new Set(['AND', 'OR', 'FIRST', 'END']);
     state.allCriteria.forEach(c => {
@@ -606,7 +606,7 @@ describe('Data Integrity Validation', () => {
     });
   });
 
-  it('Should have consistent depth values where applicable', () => {
+  it('Depth values consistent', () => {
     const state = setupTestState();
     state.allCriteria.forEach(c => {
       const expectedDepth = c.crit.length - 1;
@@ -616,7 +616,7 @@ describe('Data Integrity Validation', () => {
     });
   });
 
-  it('Should have all direct children of a parent build correctly', () => {
+  it('Direct children correctly indexed by parent', () => {
     const state = setupTestState();
     state.allCriteria.forEach(parent => {
       const children = state.getDirectChildren(parent.crit);
@@ -630,9 +630,9 @@ describe('Data Integrity Validation', () => {
 
 // ADVANCED SATISFACTION TESTS
 
-describe('Advanced Satisfaction Tests', () => {
+describe('Mixed Logic Satisfaction', () => {
 
-  it('Should chain satisfaction evaluation through deep hierarchy', () => {
+  it('Satisfaction cascades through deep hierarchy', () => {
     const state = setupTestState();
     const AAA = state.getCriterionByCode('AAA');
     const AA = state.getCriterionByCode('AA');
@@ -643,7 +643,7 @@ describe('Advanced Satisfaction Tests', () => {
     assertFalse(state.isClauseSatisfied(AA), 'AND parent should not satisfy with only one child');
   });
 
-  it('Should satisfy OR logic with single child check', () => {
+  it('OR logic satisfied by any child', () => {
     const state = setupTestState();
     const AB = state.getCriterionByCode('AB'); // logic: OR
     const childrenAB = state.getDirectChildren('AB');
@@ -653,7 +653,7 @@ describe('Advanced Satisfaction Tests', () => {
     assertTrue(state.isClauseSatisfied(AB), 'OR parent should be satisfied with one child checked');
   });
 
-  it('Should validate AND logic requires all children', () => {
+  it('AND logic requires all children', () => {
     const state = setupTestState();
     const AA = state.getCriterionByCode('AA'); // logic: AND
     const childrenAA = state.getDirectChildren('AA');
@@ -671,7 +671,7 @@ describe('Advanced Satisfaction Tests', () => {
 
 describe('Hierarchy and Lookup Operations', () => {
 
-  it('Should correctly identify parent-child relationships through code matching', () => {
+  it('Parent-child relationships through code matching', () => {
     const state = setupTestState();
     const parentAA = state.getCriterionByCode('AA');
     const childAAA = state.getCriterionByCode('AAA');
@@ -687,7 +687,7 @@ describe('Hierarchy and Lookup Operations', () => {
     assertTrue(codesList.includes('AAA'), 'AA should find AAA as direct child');
   });
 
-  it('Should not get grandchildren when looking for direct children', () => {
+  it('getDirectChildren returns only direct children', () => {
     const state = setupTestState();
     const childrenA = state.getDirectChildren('A');
     const codes = childrenA.map(c => c.crit);
@@ -697,7 +697,7 @@ describe('Hierarchy and Lookup Operations', () => {
     assertFalse(codes.includes('ABA'), 'ABA should not be direct child of A');
   });
 
-  it('Should navigate full path from A to AAA', () => {
+  it('Navigate full path from A to AAA', () => {
     const state = setupTestState();
 
     const fromA = state.getDirectChildren('A');
@@ -716,9 +716,9 @@ describe('Hierarchy and Lookup Operations', () => {
 
 // STATE MANAGEMENT AND CACHING TESTS
 
-describe('State Management and Cache Behavior', () => {
+describe('Cache Invalidation', () => {
 
-  it('Should maintain checked state during navigation', () => {
+  it('Checked state maintained during navigation', () => {
     const state = setupTestState();
     const A = state.getCriterionByCode('A');
     const AB = state.getCriterionByCode('AB');
@@ -736,7 +736,7 @@ describe('State Management and Cache Behavior', () => {
     assertTrue(!!state.checkedCriteria[nodeId_AB], 'AB should still be checked');
   });
 
-  it('Should properly invalidate cache upon state changes', () => {
+  it('Cache invalidated upon state changes', () => {
     const state = setupTestState();
     const AB = state.getCriterionByCode('AB');
     const child = state.getDirectChildren('AB')[0];
@@ -747,7 +747,7 @@ describe('State Management and Cache Behavior', () => {
     assertTrue(state.isClauseSatisfied(AB), 'After child check, AB should be satisfied');
   });
 
-  it('Should accumulate checks across unrelated branches', () => {
+  it('Checks accumulate across unrelated branches', () => {
     const state = setupTestState();
     const AA = state.getCriterionByCode('AA');
     const AB = state.getCriterionByCode('AB');
@@ -763,7 +763,7 @@ describe('State Management and Cache Behavior', () => {
     assertTrue(!!state.checkedCriteria[idAB], 'AB should now be checked');
   });
 
-  it('Should handle toggling the same criterion multiple times', () => {
+  it('Toggling same criterion multiple times', () => {
     const state = setupTestState();
     const AAA = state.getCriterionByCode('AAA');
     const id = state.getCriterionId(AAA);
@@ -780,7 +780,7 @@ describe('State Management and Cache Behavior', () => {
 
 describe('Criteria Index Validation', () => {
 
-  it('Should build criteriaByCode index correctly', () => {
+  it('CriteriaByCode index built correctly', () => {
     const state = setupTestState();
     const codes = ['A', 'AA', 'AB', 'AAA', 'AAB', 'ABA', 'ABB'];
 
@@ -793,7 +793,7 @@ describe('Criteria Index Validation', () => {
     });
   });
 
-  it('Should build clauseChildrenMap with correct parent-child links', () => {
+  it('clauseChildrenMap correct parent-child links', () => {
     const state = setupTestState();
     const A = state.getCriterionByCode('A');
     const parentId = state.getCriterionId(A);
@@ -808,7 +808,7 @@ describe('Criteria Index Validation', () => {
     });
   });
 
-  it('Should validate all direct children have correct parent codes', () => {
+  it('All direct children have correct parent codes', () => {
     const state = setupTestState();
     state.allCriteria.forEach(parent => {
       const children = state.getDirectChildren(parent.crit);
@@ -819,7 +819,7 @@ describe('Criteria Index Validation', () => {
     });
   });
 
-  it('Should ensure all criteria have valid logic types', () => {
+  it('All criteria have valid logic types', () => {
     const state = setupTestState();
     const validLogics = new Set(['AND', 'OR', 'FIRST', 'END']);
     state.allCriteria.forEach(c => {
@@ -863,9 +863,9 @@ describe('Classification Helpers', () => {
 
 // INTEGRATION TESTS WITH REAL DATA
 
-describe('Real Data: Aquods (CA) OR Logic Fix', () => {
+describe('Aquods (CA) Logic Inference', () => {
 
-  it('Should load dst-data.json successfully', () => {
+  it('Load dst-data.json successfully', () => {
     let fs;
     try {
       fs = require('fs');
@@ -958,7 +958,7 @@ describe('Real Data: Aquods (CA) OR Logic Fix', () => {
 
 describe('Real Data Integration Tests', () => {
 
-  it('Should instantiate engine from real data successfully', () => {
+  it('Instantiate engine from real data successfully', () => {
     let fs;
     try {
       fs = require('fs');
@@ -1073,7 +1073,7 @@ describe('Real Data Integration Tests', () => {
     );
   });
 
-  it('Should handle Spodosols (C) suborder navigation with fixed Aquods', () => {
+  it('Spodosols (C) navigation with fixed Aquods', () => {
     let fs;
     try {
       fs = require('fs');
@@ -1107,7 +1107,7 @@ describe('Real Data Integration Tests', () => {
   });
 });
 
-describe('Data Structure: Aridisols Mixed Logic (Semantic)', () => {
+describe('Aridisols Mixed Logic', () => {
 
   it('Aridisols G.1 has semantically correct mixed AND/OR logic', () => {
     let fs;
@@ -1181,9 +1181,9 @@ describe('Data Structure: Aridisols Mixed Logic (Semantic)', () => {
   });
 });
 
-describe('Regression Tests: Other Suborders Still Work', () => {
+describe('Regression: Other Suborders', () => {
 
-  it('Should handle AND logic correctly (other taxa)', () => {
+  it('AND logic correctness (other taxa)', () => {
     const criteria = [
       { crit: 'TEST', clause: 1, parent_clause: '', logic: 'AND', depth: 0, content: 'Test AND', key: 'Test' },
       { crit: 'TEST', clause: 2, parent_clause: 1, logic: 'END', depth: 1, content: 'Child 1', key: 'Test' },
@@ -1208,7 +1208,7 @@ describe('Regression Tests: Other Suborders Still Work', () => {
     );
   });
 
-  it('Should preserve OR logic for actual OR nodes', () => {
+  it('OR logic preservation for OR nodes', () => {
     const criteria = [
       { crit: 'TEST', clause: 1, parent_clause: '', logic: 'OR', depth: 0, content: 'Test OR', key: 'Test' },
       { crit: 'TEST', clause: 2, parent_clause: 1, logic: 'END', depth: 1, content: 'Child 1', key: 'Test' },
@@ -1227,7 +1227,7 @@ describe('Regression Tests: Other Suborders Still Work', () => {
   });
 });
 
-describe('Mixed Logic Run-Grouping Evaluation', () => {
+describe('Run-Grouping Logic', () => {
 
   it('Aridisols G.1: checking a+b only does NOT satisfy G.1', () => {
     // Create synthetic test data since real data access in test runner can be unreliable
@@ -1401,6 +1401,141 @@ describe('Mixed Logic Run-Grouping Evaluation', () => {
 
     state.reset();
     assertFalse(state.isClauseSatisfied(parent), 'Uniform OR: need at least one');
+  });
+
+});
+
+describe('Deep Hierarchy Validation', () => {
+
+  it('C.3: Four-level nesting should have correct depth values', () => {
+    let fs, DSTCore;
+    try {
+      fs = require('fs');
+      DSTCore = require('./dst-core.js');
+    } catch (e) {
+      return;
+    }
+
+    const data = JSON.parse(fs.readFileSync('./data/dst-data.json', 'utf8'));
+    const engine = DSTCore.create(data);
+
+    // Get C.3 hierarchy
+    const c3 = engine.allCriteria.find(c => c.clause_id === 'C.3');
+    const c3a = engine.allCriteria.find(c => c.clause_id === 'C.3.a');
+    const c3a1 = engine.allCriteria.find(c => c.clause_id === 'C.3.a.1');
+    const c3c2a = engine.allCriteria.find(c => c.clause_id === 'C.3.c.2.a');
+
+    assertEqual(c3.depth, 1, 'C.3 should be depth 1');
+    assertEqual(c3a.depth, 2, 'C.3.a should be depth 2');
+    assertEqual(c3a1.depth, 3, 'C.3.a.1 should be depth 3');
+    assertEqual(c3c2a.depth, 4, 'C.3.c.2.a should be depth 4');
+  });
+
+  it('C.3: Parent-child clause references should be valid', () => {
+    let fs, DSTCore;
+    try {
+      fs = require('fs');
+      DSTCore = require('./dst-core.js');
+    } catch (e) {
+      return;
+    }
+
+    const data = JSON.parse(fs.readFileSync('./data/dst-data.json', 'utf8'));
+    const engine = DSTCore.create(data);
+
+    // C.3.a.1 should have parent_clause = 5 (C.3.a's clause number)
+    const c3a1 = engine.allCriteria.find(c => c.clause_id === 'C.3.a.1');
+    const c3a = engine.allCriteria.find(c => c.crit === 'C' && c.clause === 5);
+
+    assertDefined(c3a, 'C.3.a with clause=5 should exist');
+    assertEqual(c3a1.parent_clause, 5, 'C.3.a.1 parent_clause should be 5');
+    assertEqual(c3a.clause_id, 'C.3.a', 'Clause 5 should be C.3.a');
+  });
+
+  it('C.3: Depth-first array ordering should be preserved', () => {
+    let fs, DSTCore;
+    try {
+      fs = require('fs');
+      DSTCore = require('./dst-core.js');
+    } catch (e) {
+      return;
+    }
+
+    const data = JSON.parse(fs.readFileSync('./data/dst-data.json', 'utf8'));
+    const nav = data.navigation.criteria;
+
+    // Find C.3 items
+    const indices = {};
+    nav.forEach((c, i) => {
+      if (c.crit === 'C' && c.clause_id.startsWith('C.3')) {
+        indices[c.clause_id] = i;
+      }
+    });
+
+    // Check depth-first order: C.3 → C.3.a → C.3.a.1-5 → C.3.b → ...
+    assertTrue(indices['C.3'] < indices['C.3.a'], 'C.3 should come before C.3.a');
+    assertTrue(indices['C.3.a'] < indices['C.3.a.1'], 'C.3.a should come before its children');
+    assertTrue(indices['C.3.a.5'] < indices['C.3.b'], 'C.3.a children should come before C.3.b');
+  });
+
+  it('GEBD: Sibling ordering should be clause_id ascending', () => {
+    let fs, DSTCore;
+    try {
+      fs = require('fs');
+      DSTCore = require('./dst-core.js');
+    } catch (e) {
+      return;
+    }
+
+    const data = JSON.parse(fs.readFileSync('./data/dst-data.json', 'utf8'));
+    const nav = data.navigation.criteria;
+
+    // Find GEBD.1 and GEBD.2
+    const indices = {};
+    nav.forEach((c, i) => {
+      if (c.clause_id === 'GEBD.1' || c.clause_id === 'GEBD.2') {
+        indices[c.clause_id] = i;
+      }
+    });
+
+    assertTrue(indices['GEBD.1'] < indices['GEBD.2'], 'GEBD.1 should appear before GEBD.2');
+  });
+
+  it('Complex hierarchy: Children appear immediately after their parent', () => {
+    let fs, DSTCore;
+    try {
+      fs = require('fs');
+      DSTCore = require('./dst-core.js');
+    } catch (e) {
+      return;
+    }
+
+    const data = JSON.parse(fs.readFileSync('./data/dst-data.json', 'utf8'));
+    const nav = data.navigation.criteria;
+
+    // For C.3.a, its children should appear before C.3.b
+    const c3a_idx = nav.findIndex(c => c.clause_id === 'C.3.a');
+    const c3a1_idx = nav.findIndex(c => c.clause_id === 'C.3.a.1');
+    const c3b_idx = nav.findIndex(c => c.clause_id === 'C.3.b');
+
+    assertTrue(c3a_idx > -1 && c3a1_idx > -1 && c3b_idx > -1, 'All should exist');
+    assertTrue(c3a_idx < c3a1_idx, 'Parent should come before children');
+    assertTrue(c3a1_idx < c3b_idx, 'C.3.a children should come before C.3.b');
+  });
+
+  it('Logic inference: Root AND criteria with OR children should inherit OR logic', () => {
+    let fs, DSTCore;
+    try {
+      fs = require('fs');
+      DSTCore = require('./dst-core.js');
+    } catch (e) {
+      return;
+    }
+
+    const data = JSON.parse(fs.readFileSync('./data/dst-data.json', 'utf8'));
+    const ca = data.navigation.criteria.find(c => c.clause_id === 'CA');
+
+    assertEqual(ca.logic, 'OR', 'CA should have OR logic (inferred from children)');
   });
 
 });

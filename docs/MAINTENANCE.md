@@ -47,6 +47,49 @@ git commit -m "Update USDA Keys data to YYYY edition"
 git push
 ```
 
+## Data Quality Issues
+
+### When a criteria ordering or content bug is discovered
+
+**IMPORTANT:** `data/dst-data.json` is **generated from source**, not manually edited.
+
+If you discover a bug in the criteria data (e.g., incorrect ordering, missing sub-criteria):
+
+1. **Determine the root cause:**
+   - Is the bug in `assets/2022_KST_criteria_EN.json` (USDA source)?
+   - Is the bug in the pipeline scripts (`scripts/build_tree.py`, `apply_phase*.py`)?
+   - Or was `dst-data.json` manually edited?
+
+2. **DO NOT manually edit `dst-data.json`** — fixes won't be reproducible.
+
+3. **Instead:**
+
+   - If USDA source bug: Report to USDA or fix in the assets file
+   - If pipeline bug: Fix the relevant script in `scripts/`
+   - Then regenerate: `bash scripts/build.sh`
+   - Verify: Check output before committing
+
+4. **Commit with explanation:**
+
+   ```bash
+   git add data/dst-data.json
+   git commit -m "fix: [description of what was wrong and where]
+
+   Root cause: [USDA source issue | pipeline bug in build_tree.py | ...]
+   Regenerated from pipeline: bash scripts/build.sh
+
+   Before fix: [old state]
+   After fix: [new state verified]"
+   ```
+
+### Example: Clauses out of order
+
+When `build_tree.py` splits merged clauses (e.g., "(2) At any depth, (a) If the spodic..."), it creates synthetic clause numbers. If these appear out of order in final output:
+- Verify `build_tree.py` splits them in correct order (it should)
+- Check if pipeline phases inadvertently reorder them
+- If found in pipeline, fix the script and regenerate
+- Never manually reorder in `dst-data.json`
+
 ## Troubleshooting
 
 ### Navigation doesn't respond to clicks

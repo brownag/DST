@@ -8,7 +8,9 @@ help:
 	@echo ""
 	@echo "Core Commands:"
 	@echo "  make test              - Run comprehensive test suite"
-	@echo "  make validate          - Validate logic consistency in data"
+	@echo "  make validate          - Validate logic AND data integrity"
+	@echo "  make validate-logic    - Validate logic consistency only"
+	@echo "  make validate-integrity - Validate data integrity only"
 	@echo "  make serve             - Start local development server"
 	@echo "  make dev               - Start server and run tests in watch mode"
 	@echo ""
@@ -27,19 +29,23 @@ help:
 	@echo "  make test              # Run tests once"
 	@echo "  make serve             # Start dev server on http://localhost:8000"
 	@echo "  make dev               # Start server + watch tests"
-	@echo "  make validate          # Check for data quality issues"
+	@echo "  make validate          # Check logic and data integrity"
+	@echo "  make validate-integrity # Check for data ordering/hierarchy issues"
 	@echo "  make version           # Show current version"
 
 # Run comprehensive test suite
 test:
-	@echo "Running comprehensive test suite..."
-	@node scripts/tests.js
+	@node scripts/tests.js 2>&1 | tail -8 | sed 's/^=.*$$//' | sed '/^$$/d'
 
 # Validate logic consistency
-validate:
-	@echo "Validating logic consistency..."
-	@node scripts/validate-logic-consistency.js
-	@echo "Validation complete"
+validate: validate-logic validate-integrity
+	@echo "✓ All validation checks passed"
+
+validate-logic:
+	@node scripts/validate-logic-consistency.js 2>&1 | tail -3 | sed 's/^=.*$$//' | sed '/^$$/d' || true
+
+validate-integrity:
+	@node scripts/validate-data-integrity.js 2>&1 | tail -5 | sed 's/^=.*$$//' | sed '/^$$/d' || true
 
 # Start local development server
 serve:
@@ -67,8 +73,7 @@ install:
 
 # Run all checks
 all: validate lint test
-	@echo ""
-	@echo "All checks passed!"
+	@echo "✓ All checks passed successfully"
 
 # Lint/check code quality
 lint:

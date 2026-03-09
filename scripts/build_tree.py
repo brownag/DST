@@ -273,6 +273,22 @@ def process_code_group(crit, items):
         for k in [l for l in stack if l > level]:
             del stack[k]
 
+        # Calculate actual depth based on parent nesting, not detected level
+        # (detect_level might skip levels, e.g., 0 -> 2 for "a." with no "1." parent)
+        if level == 0:
+            actual_depth = 0
+        elif parent_clause and parent_clause != '':
+            # Find parent's depth in current nav
+            parent_depth = 0
+            for prev_item in nav:
+                if prev_item['crit'] == crit and prev_item['clause'] == parent_clause:
+                    parent_depth = prev_item['depth']
+                    break
+            actual_depth = parent_depth + 1
+        else:
+            # No parent found, use detected level but don't skip (fallback to level 1 if level > 1)
+            actual_depth = 1 if level > 1 else level
+
         record = {
             'clause_id': clause_id,
             'crit': crit,
@@ -280,7 +296,7 @@ def process_code_group(crit, items):
             'parent_clause': parent_clause,
             'content': display_content,
             'logic': map_logic(logic_raw),
-            'depth': level,
+            'depth': actual_depth,
         }
 
         if level == 0 and header_is_outcome:
@@ -302,6 +318,24 @@ def process_code_group(crit, items):
     elif outcome is not None and outcome_content is None:
         # Shouldn't happen, but keep whatever we have
         pass
+
+    # Sort consecutive sibling groups by clause_id (in-place, preserving depth-first order)
+    # Find runs of same-depth items with same parent and sort them
+    i = 0
+    while i < len(nav):
+        current = nav[i]
+        key = (current['crit'], current['parent_clause'])
+
+        # Find the end of this sibling run (consecutive items with same parent)
+        j = i + 1
+        while j < len(nav) and nav[j]['crit'] == current['crit'] and nav[j]['parent_clause'] == current['parent_clause'] and nav[j]['depth'] == current['depth']:
+            j += 1
+
+        # Sort this sibling group by clause_id (if > 1 sibling)
+        if j - i > 1:
+            nav[i:j] = sorted(nav[i:j], key=lambda x: x['clause_id'])
+
+        i = j
 
     return nav, outcome
 
@@ -340,27 +374,28 @@ def resolve_positional_logic(nav_list):
                 s['logic'] = dominant
                 end_resolved += 1
 
-    # Pass 2: resolve INFER markers from children
+    # Pass 2: resolve INFER and root AND logic markers from children
     for item in nav_list:
-        if item['logic'] != 'INFER':
-            continue
-        # Find this item's children
-        child_key = (item['crit'], item['clause'])
-        children = children_of.get(child_key, [])
-        if children:
-            # Use first child's concrete logic
-            for child in children:
-                if child['logic'] not in ('END', 'INFER'):
-                    item['logic'] = child['logic']
+        # Skip non-INFER and non-root items
+        if item['logic'] == 'INFER' or (item['depth'] == 0 and item['logic'] == 'AND'):
+            # Find this item's children
+            child_key = (item['crit'], item['clause'])
+            children = children_of.get(child_key, [])
+            if children:
+                # Use first child's concrete logic
+                for child in children:
+                    if child['logic'] not in ('END', 'INFER'):
+                        item['logic'] = child['logic']
+                        if item['logic'] != 'INFER':
+                            infer_resolved += 1
+                        break
+                else:
+                    item['logic'] = 'OR'
                     infer_resolved += 1
-                    break
-            else:
-                item['logic'] = 'OR'
+            elif item['logic'] == 'INFER':
+                # No children — default to AND (leaf-like)
+                item['logic'] = 'AND'
                 infer_resolved += 1
-        else:
-            # No children — default to AND (leaf-like)
-            item['logic'] = 'AND'
-            infer_resolved += 1
 
     if end_resolved:
         info(f"Resolved {end_resolved} END markers → sibling logic")
