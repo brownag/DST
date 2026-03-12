@@ -1181,6 +1181,101 @@ describe('Aridisols Mixed Logic', () => {
   });
 });
 
+describe('Histosols (B) Mixed AND/OR Logic Regression', () => {
+
+  it('B.1 (AND) alone should NOT satisfy B', () => {
+    let fs;
+    try {
+      fs = require('fs');
+    } catch (e) {
+      return;
+    }
+
+    if (!fs) return;
+
+    const data = JSON.parse(fs.readFileSync('./data/dst-data.json', 'utf8'));
+    const engine = DSTCore.create(data);
+
+    const bRoot = data.navigation.criteria.find(c => c.crit === 'B' && c.clause === 1); // B root
+    const b1 = data.navigation.criteria.find(c => c.crit === 'B' && c.clause === 2); // B.1 leaf
+    const b2 = data.navigation.criteria.find(c => c.crit === 'B' && c.clause === 3); // B.2 parent
+
+    assertDefined(bRoot, 'B root should exist');
+    assertDefined(b1, 'B.1 should exist');
+    assertDefined(b2, 'B.2 should exist');
+    assertEqual(b1.logic, 'AND', 'B.1 should have AND logic (required)');
+    assertEqual(b2.logic, 'OR', 'B.2 should have OR logic (alternatives)');
+
+    // Check only B.1 (leaf, directly checkable)
+    engine.check(engine.getCriterionId(b1));
+
+    // B should NOT be satisfied — B.1 AND B.2 both required, only B.1 checked
+    assertFalse(
+      engine.isClauseSatisfied(bRoot),
+      'B should NOT be satisfied with only B.1 checked — B requires both B.1 (AND) and B.2 (OR) to be satisfied'
+    );
+  });
+
+  it('B.1 (AND) + one B.2 child SHOULD satisfy B', () => {
+    let fs;
+    try {
+      fs = require('fs');
+    } catch (e) {
+      return;
+    }
+
+    if (!fs) return;
+
+    const data = JSON.parse(fs.readFileSync('./data/dst-data.json', 'utf8'));
+    const engine = DSTCore.create(data);
+
+    const bRoot = data.navigation.criteria.find(c => c.crit === 'B' && c.clause === 1); // B root
+    const b1 = data.navigation.criteria.find(c => c.crit === 'B' && c.clause === 2); // B.1 leaf
+    const b2Children = data.navigation.criteria.filter(c => c.crit === 'B' && c.parent_clause === 3); // children of B.2
+
+    assertTrue(b2Children.length > 0, 'B.2 should have children');
+
+    // Check B.1 and one of B.2's children
+    engine.check(engine.getCriterionId(b1));
+    engine.check(engine.getCriterionId(b2Children[0]));
+
+    // B SHOULD be satisfied: B.1 (AND) is checked, B.2 (OR) has one child checked
+    assertTrue(
+      engine.isClauseSatisfied(bRoot),
+      'B should be satisfied when B.1 (AND) is checked and B.2 (OR) has at least one child checked'
+    );
+  });
+
+  it('Only B.2 child (without B.1) should NOT satisfy B', () => {
+    let fs;
+    try {
+      fs = require('fs');
+    } catch (e) {
+      return;
+    }
+
+    if (!fs) return;
+
+    const data = JSON.parse(fs.readFileSync('./data/dst-data.json', 'utf8'));
+    const engine = DSTCore.create(data);
+
+    const bRoot = data.navigation.criteria.find(c => c.crit === 'B' && c.clause === 1); // B root
+    const b1 = data.navigation.criteria.find(c => c.crit === 'B' && c.clause === 2); // B.1 leaf
+    const b2Children = data.navigation.criteria.filter(c => c.crit === 'B' && c.parent_clause === 3); // children of B.2
+
+    assertTrue(b2Children.length > 0, 'B.2 should have children');
+
+    // Check only one B.2 child (NOT B.1)
+    engine.check(engine.getCriterionId(b2Children[0]));
+
+    // B should NOT be satisfied — B.1 (AND) is required but not checked
+    assertFalse(
+      engine.isClauseSatisfied(bRoot),
+      'B should NOT be satisfied without B.1 (AND) being checked, even if B.2 (OR) has a child checked'
+    );
+  });
+});
+
 describe('Regression: Other Suborders', () => {
 
   it('AND logic correctness (other taxa)', () => {

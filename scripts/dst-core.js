@@ -116,7 +116,21 @@ var DSTCore = (function () {
                 return run.items.some(function (s) { return self.isClauseSatisfied(s); });
             });
 
-            // Combine runs with parent logic
+            // Combine runs: if first run is AND on a leaf sibling, require all runs
+            // (AND overrides parent logic). Otherwise use parent logic.
+            // This preserves the B.1(AND) requirement while allowing FIRST/OR parents to choose.
+            var firstRun = runs[0];
+            var firstSibling = siblings[0];
+            var firstRunIsAndLeaf = firstRun.logic === 'AND' &&
+                                    firstRun.items.length === 1 &&
+                                    self.isLeafCriterion(firstSibling);
+
+            if (firstRunIsAndLeaf) {
+                // Leaf with AND: all runs must pass (AND overrides parent logic)
+                return runResults.every(function (r) { return r; });
+            }
+
+            // Standard behavior: use parent logic
             if (parentLogic === 'AND') {
                 return runResults.every(function (r) { return r; });
             }
