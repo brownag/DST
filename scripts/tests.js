@@ -1635,6 +1635,149 @@ describe('Deep Hierarchy Validation', () => {
 
 });
 
+// PUBLIC API CONTRACT TESTS
+
+describe('Public API Contract', () => {
+
+  it('toggle: unchecked → checked', () => {
+    const state = setupTestState();
+    const leaf = state.getCriterionByCode('AAA');
+    const id = state.getCriterionId(leaf);
+
+    assertTrue(!state.checkedCriteria[id], 'Should start unchecked');
+    state.toggle(id);
+    assertTrue(state.checkedCriteria[id], 'Should be checked after toggle');
+  });
+
+  it('toggle: checked → unchecked', () => {
+    const state = setupTestState();
+    const leaf = state.getCriterionByCode('AAA');
+    const id = state.getCriterionId(leaf);
+
+    state.check(id);
+    assertTrue(state.checkedCriteria[id], 'Should be checked');
+    state.toggle(id);
+    assertTrue(!state.checkedCriteria[id], 'Should be unchecked after toggle');
+  });
+
+  it('onChange: listener called on check', () => {
+    const state = setupTestState();
+    const leaf = state.getCriterionByCode('AAA');
+    const id = state.getCriterionId(leaf);
+    let callCount = 0;
+
+    state.onChange(() => { callCount++; });
+    state.check(id);
+
+    assertEqual(callCount, 1, 'Listener should be called once on check');
+  });
+
+  it('onChange: unsubscribe removes listener', () => {
+    const state = setupTestState();
+    const leaf = state.getCriterionByCode('AAA');
+    const id = state.getCriterionId(leaf);
+    let callCount = 0;
+
+    const unsubscribe = state.onChange(() => { callCount++; });
+    unsubscribe();
+    state.check(id);
+
+    assertEqual(callCount, 0, 'Listener should not be called after unsubscribe');
+  });
+
+  it('onChange: listener called on reset', () => {
+    const state = setupTestState();
+    const leaf = state.getCriterionByCode('AAA');
+    let callCount = 0;
+
+    state.check(state.getCriterionId(leaf));
+    state.onChange(() => { callCount++; });
+    state.reset();
+
+    assertEqual(callCount, 1, 'Listener should be called once on reset');
+  });
+
+  it('removeCodePrefix: strips code and punctuation', () => {
+    const state = setupTestState();
+    const result = state.removeCodePrefix('A. Soils with history', 'A');
+
+    assertEqual(result, 'Soils with history', 'Should strip "A. " prefix');
+  });
+
+  it('removeCodePrefix: no-op if no prefix match', () => {
+    const state = setupTestState();
+    const input = 'Some text without prefix';
+    const result = state.removeCodePrefix(input, 'X');
+
+    assertEqual(result, input, 'Should return unchanged if no prefix');
+  });
+
+  it('getClassificationPath: no checks returns 4 unsatisfied items', () => {
+    const state = setupTestState();
+    const path = state.getClassificationPath();
+
+    assertEqual(path.length, 4, 'Path should have 4 levels');
+    path.forEach((item, idx) => {
+      assertFalse(item.satisfied, `Level ${idx} should be unsatisfied`);
+      assertEqual(item.code, '?', `Unsatisfied level should have code "?"`);
+    });
+  });
+
+  it('getCurrentClassification: no checks returns empty string', () => {
+    const state = setupTestState();
+    const result = state.getCurrentClassification();
+
+    assertEqual(result, '', 'Should return empty string when nothing satisfied');
+  });
+
+  it('getClassificationLevel: no checks returns empty string', () => {
+    const state = setupTestState();
+    const result = state.getClassificationLevel();
+
+    assertEqual(result, '', 'Should return empty string when nothing satisfied');
+  });
+
+  it('getClassificationBreadcrumb: no checks returns empty string', () => {
+    const state = setupTestState();
+    const result = state.getClassificationBreadcrumb();
+
+    assertEqual(result, '', 'Should return empty string when nothing satisfied');
+  });
+
+  it('getVisibleGroups: no checks returns only order-level groups', () => {
+    const state = setupTestState();
+    const visible = state.getVisibleGroups();
+
+    visible.forEach(g => {
+      assertTrue(g.code.length === 1, 'All groups should be order-level (length 1)');
+    });
+  });
+
+  it('isGroupSatisfied: unknown code returns false', () => {
+    const state = setupTestState();
+    const result = state.isGroupSatisfied('UNKNOWN_CODE_XYZ');
+
+    assertFalse(result, 'Unknown code should return false');
+  });
+
+  it('create: null data returns safe empty engine', () => {
+    const engine = DSTCore.create(null);
+
+    assertDefined(engine, 'Engine should be defined');
+    assertTrue(engine.allCriteria.length === 0, 'Should have empty criteria');
+    assertEqual(engine.getCurrentClassification(), '', 'Should return empty classification');
+  });
+
+  it('create: empty object returns safe empty engine', () => {
+    const engine = DSTCore.create({});
+
+    assertDefined(engine, 'Engine should be defined');
+    assertTrue(engine.allCriteria.length === 0, 'Should have empty criteria');
+    assertEqual(engine.getCurrentClassification(), '', 'Should return empty classification');
+  });
+
+});
+
 // TEST EXECUTION
 
 function printSummary() {

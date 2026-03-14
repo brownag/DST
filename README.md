@@ -2,7 +2,35 @@
 
 Interactive, offline-first web app for USDA soil classification following the Keys to Soil Taxonomy (2022 Edition).
 
-## Quick Start
+## Install
+
+```bash
+npm install dst-soil-taxonomy
+```
+
+## Usage (Node.js)
+
+```javascript
+const DSTCore = require('dst-soil-taxonomy');
+const data = require('dst-soil-taxonomy/data/dst-data.json');
+
+const engine = DSTCore.create(data);
+engine.check('AAA_5');                             // check criterion AAA, clause 5
+console.log(engine.getCurrentClassification());    // e.g. "Histels"
+console.log(engine.getClassificationBreadcrumb()); // e.g. "Gelisols › Histels"
+engine.reset();
+```
+
+## Usage (Browser)
+
+```html
+<script src="node_modules/dst-soil-taxonomy/scripts/dst-core.js"></script>
+<script>
+  const engine = DSTCore.create(data); // same API
+</script>
+```
+
+## Quick Start (Web App)
 
 ```bash
 python3 -m http.server 8000
@@ -70,4 +98,4 @@ python3 -m http.server 8000           # Or open test.html in browser
 
 ## Version
 
-1.0.0 — February 2026
+1.0.0 — March 2026

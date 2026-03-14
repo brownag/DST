@@ -2,6 +2,15 @@ scratch/
 *.pyc
 __pycache__/
 
+# npm
+node_modules/
+package-lock.json
+*.tgz
+
+# Code coverage
+coverage/
+.nyc_output/
+
 # Asset files (USDA source data - obtain separately)
 assets/*.json
 # Don't ignore the README
