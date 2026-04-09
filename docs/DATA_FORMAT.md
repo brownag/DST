@@ -36,7 +36,7 @@ Three JSON files in `assets/`:
 ]
 ```
 
-## Output: dst-data.json (v1.0.0)
+## Output: dst-data.json
 
 ### Top-level structure
 ```json
