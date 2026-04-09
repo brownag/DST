@@ -5,7 +5,7 @@ abstract: >
   following the Keys to Soil Taxonomy (2022 Edition).
 type: software
 authors:
-  - name: Digital Keys Contributors
+  - name: Andrew G. Brown
 license: MIT
 date-released: 2026-02-16
 version: 3.2.0
@@ -32,7 +32,7 @@ references:
 preferred-citation:
   type: software
   authors:
-    - name: Digital Keys Contributors
+    - name: Andrew G. Brown
   title: Digital Keys to Soil Taxonomy
   version: 3.2.0
   date-released: 2026-02-16
