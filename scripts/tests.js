@@ -1778,6 +1778,296 @@ describe('Public API Contract', () => {
 
 });
 
+// ============================================
+// Mixed Logic Comprehensive Coverage Tests
+// ============================================
+// Regression tests for complex AND/OR scenarios
+// to prevent logic satisfaction bugs from recurring
+
+describe('BC Fibrists Regression (Mixed conditions requiring AND)', () => {
+
+  it('BC fibrists: conditions 1, 2, 3 should ALL be required (not OR)', () => {
+    let fs;
+    try {
+      fs = require('fs');
+    } catch (e) {
+      return;
+    }
+
+    if (!fs) return;
+
+    const data = JSON.parse(fs.readFileSync('./data/dst-data.json', 'utf8'));
+    const engine = DSTCore.create(data);
+
+    // BC structure:
+    // BC.1 (OR parent) contains:
+    //   - BC.2 (OR parent of 3a/3b) → condition 1
+    //   - BC.5 (AND leaf) → condition 2: "Do not have sulfuric horizon"
+    //   - BC.6 (OR leaf) → condition 3: "Do not have sulfidic materials"
+    //
+    // Despite BC.1 having OR logic, the numbered conditions (1, 2, 3)
+    // are sequential AND requirements, not alternatives.
+
+    const bc1 = data.navigation.criteria.find(c => c.crit === 'BC' && c.clause === 1);
+    const bc3 = data.navigation.criteria.find(c => c.crit === 'BC' && c.clause === 3); // condition 1a
+    const bc5 = data.navigation.criteria.find(c => c.crit === 'BC' && c.clause === 5); // condition 2
+    const bc6 = data.navigation.criteria.find(c => c.crit === 'BC' && c.clause === 6); // condition 3
+
+    assertDefined(bc1, 'BC.1 should exist');
+    assertDefined(bc3, 'BC.3 should exist (condition 1a)');
+    assertDefined(bc5, 'BC.5 should exist (condition 2)');
+    assertDefined(bc6, 'BC.6 should exist (condition 3)');
+
+    // Condition 1 alone should NOT satisfy
+    engine.check(engine.getCriterionId(bc3));
+    assertFalse(
+      engine.isClauseSatisfied(bc1),
+      'Condition 1 (1a/1b) alone should NOT satisfy BC — need conditions 2 AND 3'
+    );
+
+    // Conditions 1 + 2 should NOT satisfy
+    engine.check(engine.getCriterionId(bc5));
+    assertFalse(
+      engine.isClauseSatisfied(bc1),
+      'Conditions 1 + 2 should NOT satisfy BC — need condition 3'
+    );
+
+    // All conditions 1 + 2 + 3 should satisfy
+    engine.check(engine.getCriterionId(bc6));
+    assertTrue(
+      engine.isClauseSatisfied(bc1),
+      'All three conditions (1 AND 2 AND 3) should satisfy BC'
+    );
+
+    // Verify: missing condition 2 should fail (even with 1 + 3)
+    engine.reset();
+    engine.check(engine.getCriterionId(bc3));
+    engine.check(engine.getCriterionId(bc6));
+    assertFalse(
+      engine.isClauseSatisfied(bc1),
+      'Missing condition 2 should fail, even with conditions 1 + 3'
+    );
+  });
+
+});
+
+describe('Complex Mixed Logic Coverage', () => {
+
+  it('Parent AND with multiple AND siblings: all AND must be satisfied', () => {
+    let fs;
+    try {
+      fs = require('fs');
+    } catch (e) {
+      return;
+    }
+
+    if (!fs) return;
+
+    const data = JSON.parse(fs.readFileSync('./data/dst-data.json', 'utf8'));
+    const engine = DSTCore.create(data);
+
+    // G.2: parent AND with children G.3(AND), G.4(AND), G.5(OR), G.6(OR)
+    // Requires: (G.3 AND G.4) AND (G.5 OR G.6)
+    const g2 = data.navigation.criteria.find(c => c.crit === 'G' && c.clause === 2);
+    const g3 = data.navigation.criteria.find(c => c.crit === 'G' && c.clause === 3); // AND leaf
+    const g4 = data.navigation.criteria.find(c => c.crit === 'G' && c.clause === 4); // AND leaf
+    const g5 = data.navigation.criteria.find(c => c.crit === 'G' && c.clause === 5); // OR leaf
+    const g6 = data.navigation.criteria.find(c => c.crit === 'G' && c.clause === 6); // OR leaf
+
+    assertDefined(g2, 'G.2 should exist');
+    assertDefined(g3, 'G.3 should exist');
+    assertDefined(g4, 'G.4 should exist');
+    assertDefined(g5, 'G.5 should exist');
+    assertDefined(g6, 'G.6 should exist');
+
+    assertEqual(g2.logic, 'AND', 'G.2 parent should have AND logic');
+    assertEqual(g3.logic, 'AND', 'G.3 should be AND');
+    assertEqual(g4.logic, 'AND', 'G.4 should be AND');
+
+    // Scenario 1: Only one AND checked (not enough)
+    engine.check(engine.getCriterionId(g3));
+    assertFalse(
+      engine.isClauseSatisfied(g2),
+      'G.2 should NOT be satisfied with only G.3 (AND) checked, need both AND siblings and one OR'
+    );
+
+    // Scenario 2: Both AND checked, no OR (not enough)
+    engine.check(engine.getCriterionId(g4));
+    assertFalse(
+      engine.isClauseSatisfied(g2),
+      'G.2 should NOT be satisfied with both AND checked but no OR'
+    );
+
+    // Scenario 3: Both AND checked, one OR checked (sufficient)
+    engine.check(engine.getCriterionId(g5));
+    assertTrue(
+      engine.isClauseSatisfied(g2),
+      'G.2 SHOULD be satisfied when both AND siblings and one OR sibling are checked'
+    );
+
+    // Scenario 4: Remove one AND (breaks the requirement)
+    engine.uncheck(engine.getCriterionId(g4));
+    assertFalse(
+      engine.isClauseSatisfied(g2),
+      'G.2 should NOT be satisfied after unchecking one AND sibling, even with OR present'
+    );
+  });
+
+  it('Parent AND with mixed AND/OR: AND override applies regardless of OR presence', () => {
+    const criteria = [
+      { crit: 'MIX', clause: 1, parent_clause: '', logic: 'AND', depth: 0, content: 'Root AND', key: 'Mix' },
+      { crit: 'MIX', clause: 2, parent_clause: 1, logic: 'AND', depth: 1, content: 'Required A', key: 'Mix' },
+      { crit: 'MIX', clause: 3, parent_clause: 1, logic: 'AND', depth: 1, content: 'Required B', key: 'Mix' },
+      { crit: 'MIX', clause: 4, parent_clause: 1, logic: 'OR', depth: 1, content: 'Optional C', key: 'Mix' },
+      { crit: 'MIX', clause: 5, parent_clause: 1, logic: 'OR', depth: 1, content: 'Optional D', key: 'Mix' }
+    ];
+    const state = setupTestState(criteria);
+    const root = state.getCriterionByCode('MIX');
+    const c2 = state.allCriteria.find(c => c.clause === 2);
+    const c3 = state.allCriteria.find(c => c.clause === 3);
+    const c4 = state.allCriteria.find(c => c.clause === 4);
+
+    // Check only first OR (should fail, missing AND siblings)
+    state.check(state.getCriterionId(c4));
+    assertFalse(
+      state.isClauseSatisfied(root),
+      'Root AND with AND siblings should NOT be satisfied by OR alone'
+    );
+
+    // Add second AND (still missing first AND)
+    state.check(state.getCriterionId(c3));
+    assertFalse(
+      state.isClauseSatisfied(root),
+      'Missing first AND sibling should prevent satisfaction'
+    );
+
+    // Add first AND (now complete)
+    state.check(state.getCriterionId(c2));
+    assertTrue(
+      state.isClauseSatisfied(root),
+      'All AND siblings plus one OR should satisfy parent AND'
+    );
+  });
+
+  it('OR parent with AND first sibling: AND override makes first sibling required', () => {
+    const criteria = [
+      { crit: 'ORPARENT', clause: 1, parent_clause: '', logic: 'OR', depth: 0, content: 'Root OR', key: 'Or' },
+      { crit: 'ORPARENT', clause: 2, parent_clause: 1, logic: 'AND', depth: 1, content: 'Required group', key: 'Or' },
+      { crit: 'ORPARENT', clause: 3, parent_clause: 2, logic: 'AND', depth: 2, content: 'Item A', key: 'Or' },
+      { crit: 'ORPARENT', clause: 4, parent_clause: 2, logic: 'AND', depth: 2, content: 'Item B', key: 'Or' },
+      { crit: 'ORPARENT', clause: 5, parent_clause: 1, logic: 'OR', depth: 1, content: 'Alternative path', key: 'Or' }
+    ];
+    const state = setupTestState(criteria);
+    const root = state.getCriterionByCode('ORPARENT');
+    const c2 = state.allCriteria.find(c => c.clause === 2);
+    const c3 = state.allCriteria.find(c => c.clause === 3);
+    const c4 = state.allCriteria.find(c => c.clause === 4);
+    const c5 = state.allCriteria.find(c => c.clause === 5);
+
+    // Check alternative path (should satisfy OR parent normally)
+    state.check(state.getCriterionId(c5));
+    assertTrue(
+      state.isClauseSatisfied(root),
+      'OR parent should be satisfied by second OR sibling'
+    );
+
+    state.reset();
+
+    // Check only first AND child (not enough, need both)
+    state.check(state.getCriterionId(c3));
+    assertFalse(
+      state.isClauseSatisfied(root),
+      'AND group requires both children, partial check should not satisfy'
+    );
+
+    // Check both AND children (should now satisfy because AND overrides parent OR)
+    state.check(state.getCriterionId(c4));
+    assertTrue(
+      state.isClauseSatisfied(root),
+      'AND override should require all AND siblings regardless of OR parent'
+    );
+  });
+
+  it('AND sibling NOT first in sequence: parent logic applies', () => {
+    const criteria = [
+      { crit: 'NOTFIRST', clause: 1, parent_clause: '', logic: 'OR', depth: 0, content: 'Root OR', key: 'Nf' },
+      { crit: 'NOTFIRST', clause: 2, parent_clause: 1, logic: 'OR', depth: 1, content: 'First OR', key: 'Nf' },
+      { crit: 'NOTFIRST', clause: 3, parent_clause: 1, logic: 'AND', depth: 1, content: 'AND later', key: 'Nf' },
+      { crit: 'NOTFIRST', clause: 4, parent_clause: 3, logic: 'AND', depth: 2, content: 'Child A', key: 'Nf' },
+      { crit: 'NOTFIRST', clause: 5, parent_clause: 3, logic: 'AND', depth: 2, content: 'Child B', key: 'Nf' }
+    ];
+    const state = setupTestState(criteria);
+    const root = state.getCriterionByCode('NOTFIRST');
+    const c2 = state.allCriteria.find(c => c.clause === 2);
+    const c4 = state.allCriteria.find(c => c.clause === 4);
+    const c5 = state.allCriteria.find(c => c.clause === 5);
+
+    // Check only first OR sibling (should satisfy OR parent)
+    state.check(state.getCriterionId(c2));
+    assertTrue(
+      state.isClauseSatisfied(root),
+      'First OR sibling should satisfy OR parent (AND override only applies when AND is first)'
+    );
+
+    state.reset();
+
+    // Check both AND children without first OR (SHOULD satisfy because AND is not first, so parent OR applies)
+    state.check(state.getCriterionId(c4));
+    state.check(state.getCriterionId(c5));
+    assertTrue(
+      state.isClauseSatisfied(root),
+      'When AND sibling is not first, parent OR logic applies — satisfied AND sibling satisfies OR parent'
+    );
+
+    state.reset();
+
+    // Verify: only one AND child (not both) should NOT satisfy parent
+    state.check(state.getCriterionId(c4));
+    assertFalse(
+      state.isClauseSatisfied(root),
+      'AND sibling requires both children, partial satisfaction should not satisfy parent'
+    );
+  });
+
+  it('Deeply nested mixed logic (3 levels): correct satisfaction cascade', () => {
+    const criteria = [
+      { crit: 'DEEP', clause: 1, parent_clause: '', logic: 'AND', depth: 0, content: 'L0 AND', key: 'D' },
+      { crit: 'DEEP', clause: 2, parent_clause: 1, logic: 'OR', depth: 1, content: 'L1a OR', key: 'D' },
+      { crit: 'DEEP', clause: 3, parent_clause: 2, logic: 'AND', depth: 2, content: 'L2 AND parent', key: 'D' },
+      { crit: 'DEEP', clause: 4, parent_clause: 3, logic: 'AND', depth: 3, content: 'L3 AND leaf', key: 'D' },
+      { crit: 'DEEP', clause: 5, parent_clause: 3, logic: 'AND', depth: 3, content: 'L3 AND leaf', key: 'D' },
+      { crit: 'DEEP', clause: 6, parent_clause: 1, logic: 'AND', depth: 1, content: 'L1b AND', key: 'D' }
+    ];
+    const state = setupTestState(criteria);
+    const root = state.getCriterionByCode('DEEP');
+    const c4 = state.allCriteria.find(c => c.clause === 4);
+    const c5 = state.allCriteria.find(c => c.clause === 5);
+    const c6 = state.allCriteria.find(c => c.clause === 6);
+
+    // Check only one deep leaf (not enough)
+    state.check(state.getCriterionId(c4));
+    assertFalse(
+      state.isClauseSatisfied(root),
+      'Root AND should not be satisfied with incomplete nested AND chains'
+    );
+
+    // Complete one branch (L3 AND both satisfied, L1b still missing)
+    state.check(state.getCriterionId(c5));
+    assertFalse(
+      state.isClauseSatisfied(root),
+      'Root AND should still not be satisfied, missing L1b AND sibling'
+    );
+
+    // Complete root AND
+    state.check(state.getCriterionId(c6));
+    assertTrue(
+      state.isClauseSatisfied(root),
+      'Root AND should be satisfied when all branches complete'
+    );
+  });
+
+});
+
 // TEST EXECUTION
 
 function printSummary() {
