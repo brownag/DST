@@ -4,7 +4,6 @@ __pycache__/
 
 # npm
 node_modules/
-package-lock.json
 *.tgz
 
 # Code coverage
