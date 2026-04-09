@@ -1,0 +1,46 @@
+version: 2
+updates:
+  # Enable version updates for npm dependencies
+  - package-ecosystem: "npm"
+    directory: "/"
+    schedule:
+      interval: "weekly"
+      day: "monday"
+      time: "04:00"
+    open-pull-requests-limit: 5
+    reviewers:
+      - "brownag"
+    allow:
+      - dependency-type: "all"
+    commit-message:
+      prefix: "chore(deps):"
+      include: "scope"
+    groups:
+      npm-dependencies:
+        dependency-type: "all"
+        update-types:
+          - "minor"
+          - "patch"
+    pull-request-branch-name:
+      separator: "/"
+
+  # Enable version updates for GitHub Actions
+  - package-ecosystem: "github-actions"
+    directory: "/"
+    schedule:
+      interval: "weekly"
+      day: "monday"
+      time: "04:00"
+    open-pull-requests-limit: 5
+    reviewers:
+      - "brownag"
+    commit-message:
+      prefix: "ci(deps):"
+    groups:
+      actions:
+        dependency-type: "all"
+        update-types:
+          - "minor"
+          - "patch"
+    pull-request-branch-name:
+      separator: "/"
