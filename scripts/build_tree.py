@@ -340,6 +340,52 @@ def process_code_group(crit, items):
     return nav, outcome
 
 
+def _has_numbered_sequence(children):
+    """
+    Check if children follow a numbered sequential pattern (1., 2., 3., ...) with mixed logic.
+
+    Such patterns indicate all conditions must be satisfied (AND semantics),
+    not alternatives (OR semantics). Example: BC.1 has numbered children
+    "1. Meet either of the following", "2. Do not have...", "3. Do not have..."
+    which are sequential requirements, not alternatives.
+
+    Returns True if:
+    - 2+ children start with "1.", "2.", "3.", etc. in sequential order, AND
+    - Children have mixed logic (some AND, some OR/END) indicating cumulative conditions
+
+    Returns False if all children are OR (they're alternatives, not requirements).
+    """
+    if len(children) < 2:
+        return False
+
+    # Extract numbers from children that start with "N."
+    numbers = []
+    logics = []
+    for child in sorted(children, key=lambda c: c.get('clause', 0)):
+        content = child.get('content', '').strip()
+        m = re.match(r'^(\d+)\.', content)
+        if m:
+            numbers.append(int(m.group(1)))
+            logics.append(child.get('logic', 'OR'))
+        else:
+            # Found a child without a number - pattern broken
+            break
+
+    # Check if we found sequential numbers starting from 1: [1], [1,2], [1,2,3], etc.
+    if len(numbers) >= 2 and numbers[0] == 1 and numbers == list(range(1, len(numbers) + 1)):
+        # Found numbered sequence. Now check if logic is mixed.
+        # If all children are OR, they're alternatives (like CA: "1. foo; or 2. bar")
+        # If mixed (some AND, some OR), they're cumulative requirements (like BC: "1. foo AND 2. bar AND 3. baz")
+        has_and = any(logic == 'AND' for logic in logics)
+        has_or = any(logic in ('OR', 'END', 'FIRST') for logic in logics)
+
+        # Only treat as AND requirement if there's actual AND logic in the children
+        if has_and and has_or:
+            return True
+
+    return False
+
+
 def resolve_positional_logic(nav_list):
     """Replace END and INFER logic markers with concrete OR or AND."""
     # Group by (crit, parent_clause) — these are sibling groups
@@ -382,20 +428,42 @@ def resolve_positional_logic(nav_list):
             child_key = (item['crit'], item['clause'])
             children = children_of.get(child_key, [])
             if children:
-                # Use first child's concrete logic
-                for child in children:
-                    if child['logic'] not in ('END', 'INFER'):
-                        item['logic'] = child['logic']
-                        if item['logic'] != 'INFER':
-                            infer_resolved += 1
-                        break
-                else:
-                    item['logic'] = 'OR'
+                # Check if children follow numbered sequential pattern (1., 2., 3., ...)
+                # indicating AND semantics (all conditions must be satisfied)
+                has_numbered_sequence = _has_numbered_sequence(children)
+
+                if has_numbered_sequence:
+                    # Sequential numbered conditions demand AND logic
+                    item['logic'] = 'AND'
                     infer_resolved += 1
+                    # Debug: log which items get this treatment
+                    if item['crit'] in ('BC', 'B', 'C', 'H', 'K'):
+                        info(f"Detected numbered sequence in {item['crit']}.{item['clause']} → AND")
+                else:
+                    # Use first child's concrete logic (OR/AND)
+                    for child in children:
+                        if child['logic'] not in ('END', 'INFER'):
+                            item['logic'] = child['logic']
+                            if item['logic'] != 'INFER':
+                                infer_resolved += 1
+                            break
+                    else:
+                        item['logic'] = 'OR'
+                        infer_resolved += 1
             elif item['logic'] == 'INFER':
                 # No children — default to AND (leaf-like)
                 item['logic'] = 'AND'
                 infer_resolved += 1
+        elif item['depth'] == 0 and item['logic'] == 'OR':
+            # Also check root-level nodes with OR logic for numbered sequences
+            # This catches cases like BC where FIRST → OR was applied but should be AND
+            child_key = (item['crit'], item['clause'])
+            children = children_of.get(child_key, [])
+            if children and _has_numbered_sequence(children):
+                item['logic'] = 'AND'
+                infer_resolved += 1
+                if item['crit'] in ('BC', 'B', 'C', 'H', 'K'):
+                    info(f"Detected numbered sequence in {item['crit']}.{item['clause']} (was OR) → AND")
 
     if end_resolved:
         info(f"Resolved {end_resolved} END markers → sibling logic")
