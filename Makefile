@@ -1,4 +1,4 @@
-.PHONY: help test validate serve clean install lint dev all version sync-version
+.PHONY: help test validate serve clean install lint dev all version sync-version build
 
 # DST (Digital Keys to Soil Taxonomy) Development Makefile
 # Run 'make help' to see available commands
@@ -7,6 +7,7 @@ help:
 	@echo "Digital Keys to Soil Taxonomy - Development Commands"
 	@echo ""
 	@echo "Core Commands:"
+	@echo "  make build             - Regenerate data pipeline from USDA source"
 	@echo "  make test              - Run comprehensive test suite"
 	@echo "  make validate          - Validate logic AND data integrity"
 	@echo "  make validate-logic    - Validate logic consistency only"
@@ -26,12 +27,17 @@ help:
 	@echo "  make docs              - Show available documentation files"
 	@echo ""
 	@echo "Examples:"
+	@echo "  make build             # Regenerate data from USDA source"
 	@echo "  make test              # Run tests once"
 	@echo "  make serve             # Start dev server on http://localhost:8000"
 	@echo "  make dev               # Start server + watch tests"
 	@echo "  make validate          # Check logic and data integrity"
 	@echo "  make validate-integrity # Check for data ordering/hierarchy issues"
 	@echo "  make version           # Show current version"
+
+# Build pipeline: regenerate data from USDA source
+build:
+	@bash scripts/build.sh
 
 # Run comprehensive test suite
 test:
