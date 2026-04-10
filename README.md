@@ -17,7 +17,7 @@ const data = require('dst-soil-taxonomy/data/dst-data.json');
 const engine = DSTCore.create(data);
 engine.check('AAA_5');                             // check criterion AAA, clause 5
 console.log(engine.getCurrentClassification());    // e.g. "Histels"
-console.log(engine.getClassificationBreadcrumb()); // e.g. "Gelisols › Histels"
+console.log(engine.getClassificationBreadcrumb()); // e.g. "Gelisols > Histels"
 engine.reset();
 ```
 
@@ -41,9 +41,9 @@ Works offline after first load. No build tools required.
 
 ## Features
 
-- Navigate USDA soil taxonomy: Order → Suborder → Great Group → Subgroup
-- 5,706 decision criteria with AND/OR satisfaction logic
-- 124 glossary terms with hover definitions
+- Navigate USDA soil taxonomy: Order, Suborder, Great Group, Subgroup
+- Comprehensive decision criteria with AND/OR satisfaction logic
+- Glossary terms with hover definitions
 - Toggle to hide satisfied criteria groups for easier navigation
 - Works completely offline after initial load
 - No external dependencies beyond Alpine.js (CDN)
@@ -59,43 +59,32 @@ test.html                  Browser test runner
 scripts/
   dst-core.js              Standalone logic engine
   tests.js                  Test suite
-  build_tree.py             Data pipeline (6 steps)
+  build_tree.py             Data pipeline
   apply_phase1.py
   apply_phase2.py
   apply_phase3.py
   populate_code_names.py
   validate_schema.py
-  validate-logic-consistency.js  3-class logic validator
+  validate-logic-consistency.js  Logic validator
   sync-version.js          Version sync utility
 data/
-  dst-data.json            Generated taxonomy data (~3.5 MB)
+  dst-data.json            Generated taxonomy data
 docs/                      Developer documentation
 ```
 
 ## Testing
 
 ```bash
-npm test                              # Run test suite via Node.js
-npm run validate                      # Check logic consistency
-python3 -m http.server 8000           # Or open test.html in browser
+make test                             # Run test suite
+make validate                         # Validate logic and data integrity
+make serve                            # Start development server
 ```
 
 ## Documentation
 
-| Guide | Purpose |
-|-------|---------|
-| [docs/ARCHITECTURE.md](docs/ARCHITECTURE.md) | System design overview |
-| [docs/NAVIGATION_LOGIC.md](docs/NAVIGATION_LOGIC.md) | Satisfaction algorithm |
-| [docs/DATA_FORMAT.md](docs/DATA_FORMAT.md) | JSON schema reference |
-| [docs/FUNCTION_REFERENCE.md](docs/FUNCTION_REFERENCE.md) | Function API docs |
-| [docs/MAINTENANCE.md](docs/MAINTENANCE.md) | Data refresh & troubleshooting |
-| [docs/PUBLICATION_GUIDE.md](docs/PUBLICATION_GUIDE.md) | Release & Zenodo workflow |
+See [docs/README.md](docs/README.md) for complete documentation index and guidance on where to start.
 
 ## License
 
 - **Code**: MIT (see [LICENSE](LICENSE))
 - **Data**: USDA Keys to Soil Taxonomy, freely available for educational use
-
-## Version
-
-1.0.0 — March 2026

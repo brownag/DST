@@ -79,10 +79,10 @@ git checkout -b fix/bug-description
 
 #### Step 4: Test Your Changes
 
-**Node.js and Logic Validation:**
+**Validation:**
 ```bash
-npm test                          # Run test suite via Node.js (54 tests)
-npm run validate                  # Check logic consistency (informational)
+make test                         # Run test suite
+make validate                     # Validate logic and data integrity
 ```
 
 **Browser Testing:**
@@ -99,13 +99,13 @@ Verify:
 - Offline mode works (DevTools Network tab → Offline)
 
 **Code Coverage:**
-- All 54 tests pass in both Node.js and browser
+- All tests pass in both Node.js and browser
 - For new functions, add corresponding unit tests to `scripts/tests.js`
 
 #### Step 5: Validate Implementation
 
 **Checklist before submitting PR:**
-- [ ] `npm test` passes (Node.js)
+- [ ] `make test` passes
 - [ ] All tests pass (http://localhost:8000/test.html)
 - [ ] No npm dependencies added (maintain no-build philosophy)
 - [ ] Code follows existing style and patterns

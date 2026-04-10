@@ -4,10 +4,10 @@
 
 ### 1. Pre-Release Checks
 ```bash
-npm test                              # All tests pass
-npm run validate                      # No critical logic issues
-node scripts/sync-version.js          # Sync version to manifest.json
-python3 -m http.server 8000           # Manual spot-check in browser
+make test                             # All tests pass
+make validate                         # No critical logic issues
+make sync-version                     # Sync version to manifest.json
+make serve                            # Manual spot-check in browser
 ```
 
 ### 2. Tag and Release
@@ -34,7 +34,7 @@ git push
 ## Future Releases
 
 1. Update version in CITATION.cff and CHANGELOG.md
-2. Run `npm test` and `npm run validate`
+2. Run `make test` and `make validate`
 3. Create annotated tag and push
 4. Create GitHub Release
 5. Zenodo archives automatically (each version gets its own DOI)

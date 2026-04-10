@@ -94,13 +94,13 @@ clean:
 docs:
 	@echo "Available Documentation:"
 	@echo ""
-	@ls -lh *.md 2>/dev/null | awk '{print "  - " $$9 " (" $$5 ")"}'
+	@echo "Project Documentation:"
+	@ls -lh README.md CHANGELOG.md 2>/dev/null | awk '{print "  - " $$9 " (" $$5 ")"}'
 	@echo ""
-	@echo "Quick Links:"
-	@echo "  - FINAL_SUMMARY.md           - Complete overview of all fixes"
-	@echo "  - AQUODS_FIX_REPORT.md       - Detailed Aquods & Aridisols fixes"
-	@echo "  - COMPREHENSIVE_FIX_PLAN.md  - Strategic plan for remaining issues"
-	@echo "  - docs/FUNCTION_REFERENCE.md - Engine API reference"
+	@echo "Developer Guides:"
+	@ls -lh docs/*.md 2>/dev/null | awk '{print "  - " $$9 " (" $$5 ")"}'
+	@echo ""
+	@echo "See docs/README.md for a complete index and orientation guide"
 
 # Print current status
 status:

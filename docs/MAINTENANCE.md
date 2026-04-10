@@ -12,12 +12,7 @@ Download to `assets/`:
 
 ### 2. Run Pipeline
 ```bash
-python3 scripts/build_tree.py && \
-python3 scripts/apply_phase1.py && \
-python3 scripts/apply_phase2.py && \
-python3 scripts/apply_phase3.py && \
-python3 scripts/populate_code_names.py && \
-python3 scripts/validate_schema.py
+bash scripts/build.sh
 ```
 
 ### 3. Validate
@@ -34,11 +29,11 @@ print(f'Glossary: {len(gls)} terms')
 print(f'Schema: {d[\"metadata\"][\"schema_version\"]}')
 "
 ```
-Expected: 5,706 navigation criteria, 3,073 outcomes, 124 glossary terms.
+Verify counts look reasonable; check pipeline logs for any errors.
 
 ### 4. Test and Deploy
 ```bash
-python3 -m http.server 8000   # Test locally
+make serve   # Test locally
 # Spot-check 3-5 navigation paths: Order → Suborder → Great Group → Subgroup
 # Verify glossary tooltips appear on hover
 # Test offline mode (DevTools → Network → Offline → reload)

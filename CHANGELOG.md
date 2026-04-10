@@ -10,13 +10,13 @@ Format: [Keep a Changelog](https://keepachangelog.com/en/1.0.0/). Versioning: [S
 - **DSTCore engine** (`scripts/dst-core.js`): Standalone pure logic engine (no DOM, dual export for browser + Node.js)
 - **Test suite**: Test suite in `scripts/tests.js` covering satisfaction logic, hierarchy, navigation, edge cases, and classification helpers
 - **Browser test runner**: `test.html` with visual output and auto-run
-- **Python pipeline**: 6-step preprocessing from USDA source JSON (`build_tree.py` → `validate_schema.py`)
+- **Python pipeline**: Preprocessing from USDA source JSON (`build_tree.py` to `validate_schema.py`)
 - **Classification helpers**: `getClassificationPath()`, `getCurrentClassification()`, `getClassificationBreadcrumb()`
 - **Documentation**: `docs/` — architecture, data format, function reference, maintenance, navigation logic, publication guide
 
 ### Changed
-- Modularized architecture: `index.html` is now a thin Alpine.js shell (~290 lines) delegating all logic to `DSTCore`
-- All CSS extracted to `style.css` with 22 custom properties per theme
+- Modularized architecture: `index.html` is now a thin Alpine.js shell delegating all logic to `DSTCore`
+- All CSS extracted to `style.css` with custom properties per theme
 - Logic normalization: FIRST → OR, END → inherited from siblings, undefined → inferred from children
 - Only OR and AND logic values in generated data (FIRST/END/INFER resolved at build time)
 - Merged sub-clause splitting in `build_tree.py` for source clauses with embedded sub-clauses

@@ -54,7 +54,7 @@ Three JSON files in `assets/`:
 }
 ```
 
-### navigation.criteria (5,706 records)
+### navigation.criteria
 ```json
 {
   "clause_id": "A",
@@ -79,23 +79,23 @@ Three JSON files in `assets/`:
 | `logic` | `AND` or `OR` (source values FIRST/END are normalized to OR at build time) |
 | `depth` | 0=Order, 1=Suborder, 2=Great Group, 3=Subgroup, -1=Outcome |
 
-### outcomes (3,073 records, keyed by code)
+### outcomes
 ```json
 { "C": { "clause_id": "...", "crit": "C", "clause": 11, ... "depth": -1 } }
 ```
 Same fields as criteria, always `depth: -1`. Display-only, not used for navigation decisions.
 
-### glossary (124 terms, keyed by term_id)
+### glossary
 ```json
 { "aquic_conditions": { "term": "aquic conditions", "definition": "..." } }
 ```
 
-### order_names (12 entries)
+### order_names
 ```json
 { "A": "Gelisols", "B": "Histosols", ... "L": "Entisols" }
 ```
 
-### code_names (3,153 entries)
+### code_names
 Maps hierarchical codes to taxon names at all levels.
 ```json
 { "A": "Gelisols", "AA": "Histels", "AAA": "Folistels", ... }
