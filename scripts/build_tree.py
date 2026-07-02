@@ -297,6 +297,7 @@ def process_code_group(crit, items):
             'content': display_content,
             'logic': map_logic(logic_raw),
             'depth': actual_depth,
+            '_source_logic': logic_raw,  # Track if logic came from source
         }
 
         if level == 0 and header_is_outcome:
@@ -457,13 +458,16 @@ def resolve_positional_logic(nav_list):
         elif item['depth'] == 0 and item['logic'] == 'OR':
             # Also check root-level nodes with OR logic for numbered sequences
             # This catches cases like BC where FIRST → OR was applied but should be AND
-            child_key = (item['crit'], item['clause'])
-            children = children_of.get(child_key, [])
-            if children and _has_numbered_sequence(children):
-                item['logic'] = 'AND'
-                infer_resolved += 1
-                if item['crit'] in ('BC', 'B', 'C', 'H', 'K'):
-                    info(f"Detected numbered sequence in {item['crit']}.{item['clause']} (was OR) → AND")
+            # BUT: don't override if source explicitly specified OR (e.g., H "have either:")
+            source_logic = item.get('_source_logic')
+            if source_logic != 'OR':  # Only override if logic wasn't explicitly OR in source
+                child_key = (item['crit'], item['clause'])
+                children = children_of.get(child_key, [])
+                if children and _has_numbered_sequence(children):
+                    item['logic'] = 'AND'
+                    infer_resolved += 1
+                    if item['crit'] in ('BC', 'B', 'C', 'H', 'K'):
+                        info(f"Detected numbered sequence in {item['crit']}.{item['clause']} (was OR) → AND")
 
     if end_resolved:
         info(f"Resolved {end_resolved} END markers → sibling logic")
@@ -544,6 +548,12 @@ def main():
 
     # Resolve positional END and INFER logic markers
     resolve_positional_logic(all_nav)
+
+    # Remove tracking fields from navigation and outcomes
+    for item in all_nav:
+        item.pop('_source_logic', None)
+    for item in all_outcomes:
+        item.pop('_source_logic', None)
 
     # Combine: nav (depth >= 0) + outcomes (depth == -1) into one list
     all_criteria = all_nav + all_outcomes

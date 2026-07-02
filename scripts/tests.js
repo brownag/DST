@@ -2068,6 +2068,81 @@ describe('Complex Mixed Logic Coverage', () => {
 
 });
 
+describe('[SUITE] Ultisols (H) OR Logic Fix', () => {
+  it('Ultisols root has OR logic between H.1 and H.2', () => {
+    let fs;
+    try {
+      fs = require('fs');
+    } catch (e) { }
+
+    if (!fs) {
+      console.log('    (Skipped in browser environment)');
+      return;
+    }
+
+    const data = JSON.parse(fs.readFileSync('./data/dst-data.json', 'utf8'));
+    const engine = DSTCore.create(data);
+    const root = engine.allCriteria.find(c => c.clause_id === 'H' && c.clause === 1);
+    assertEqual(root.logic, 'OR', 'Ultisols root should have OR logic');
+    assertEqual(root.content, 'H. Other soils that have either:', 'Root content should reflect OR semantics');
+  });
+
+  it('Ultisols (H) should be satisfied by H.1 alone (OR logic)', () => {
+    let fs;
+    try {
+      fs = require('fs');
+    } catch (e) { }
+
+    if (!fs) {
+      console.log('    (Skipped in browser environment)');
+      return;
+    }
+
+    const data = JSON.parse(fs.readFileSync('./data/dst-data.json', 'utf8'));
+    const engine = DSTCore.create(data);
+
+    // Find a leaf in H.1 branch (argillic/kandic criterion)
+    const h1Leaf = engine.allCriteria.find(c => c.crit === 'H' && c.clause === 4);
+
+    if (h1Leaf) {
+      engine.check(engine.getCriterionId(h1Leaf));
+      assertTrue(
+        engine.isGroupSatisfied('H'),
+        'Ultisols should be satisfied by checking H.1 alone (OR logic, not requiring both H.1 and H.2)'
+      );
+    }
+  });
+
+  it('Ultisols (H) should be satisfied by H.2 alone (OR logic)', () => {
+    let fs;
+    try {
+      fs = require('fs');
+    } catch (e) { }
+
+    if (!fs) {
+      console.log('    (Skipped in browser environment)');
+      return;
+    }
+
+    const data = JSON.parse(fs.readFileSync('./data/dst-data.json', 'utf8'));
+    const engine = DSTCore.create(data);
+
+    // To satisfy H.2, need: H.2.a (leaf) AND H.2.b (which has children)
+    const h2a = engine.allCriteria.find(c => c.crit === 'H' && c.clause === 11); // H.2.a leaf
+    const h2b1 = engine.allCriteria.find(c => c.crit === 'H' && c.clause === 13); // H.2.b.1 (one option for H.2.b)
+
+    if (h2a && h2b1) {
+      engine.check(engine.getCriterionId(h2a));
+      engine.check(engine.getCriterionId(h2b1));
+      assertTrue(
+        engine.isGroupSatisfied('H'),
+        'Ultisols should be satisfied by checking H.2 alone (OR logic, not requiring both H.1 and H.2)'
+      );
+    }
+  });
+
+});
+
 // TEST EXECUTION
 
 function printSummary() {
